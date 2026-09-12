@@ -17,7 +17,7 @@ function toggleCode(header) {
 
 const CONFIG = {
     owner: "Bilchman",
-    repo: "OOP_REPORTS",
+    repo: "KGV-Reports",
     branch: "main",
     path: "reports",
     cacheMinutes: 5,
