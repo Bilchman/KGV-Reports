@@ -1,0 +1,174 @@
+﻿* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    background: #313244;
+    color: #cdd6f4;
+}
+
+/* ===== ЛІВЕ МЕНЮ (спільне для головної та звітів) ===== */
+.sidebar {
+    width: 280px;
+    height: 100vh;
+    background: #1e1e2e;
+    color: #cdd6f4;
+    padding: 20px;
+    position: fixed;
+    overflow-y: auto;
+}
+
+.sidebar h2 {
+    font-size: 18px;
+    margin-bottom: 4px;
+}
+
+.sidebar .subtitle {
+    color: #bac2de;
+    font-size: 13px;
+    margin-bottom: 20px;
+}
+
+.back-link {
+    display: inline-block;
+    color: #b4befe;
+    text-decoration: none;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+.back-link:hover {
+    text-decoration: underline;
+}
+
+/* ---- список звітів на головній ---- */
+.report-list-item {
+    display: block;
+    cursor: pointer;
+    padding: 10px 8px;
+    border-radius: 6px;
+    margin-top: 6px;
+    text-decoration: none;
+    color: #cdd6f4;
+    border-left: 3px solid transparent;
+}
+.report-list-item:hover {
+    background: #313244;
+}
+.report-list-item.active {
+    background: #313244;
+    border-left: 3px solid #b4befe;
+}
+.report-list-item .title {
+    font-weight: bold;
+    display: block;
+}
+.report-list-item .subtitle {
+    display: block;
+    color: #bac2de;
+    font-size: 12.5px;
+    margin-top: 2px;
+    font-weight: normal;
+}
+
+.state-message {
+    color: #bac2de;
+    font-size: 14px;
+    padding: 8px;
+}
+
+/* ---- міні-навігація всередині сторінки звіту (розділи ЛР) ---- */
+.report-menu {
+    list-style: none;
+}
+.report-menu li {
+    margin: 6px 0;
+}
+.report-menu a {
+    color: #bac2de;
+    text-decoration: none;
+    font-size: 14px;
+}
+.report-menu a:hover {
+    color: #b4befe;
+}
+
+/* ===== ПРАВА ЧАСТИНА ===== */
+.content {
+    flex: 1;
+    height: 100vh;
+    overflow-y: auto;
+    margin-left: 300px; /* щоб не залізло під меню */
+    padding: 20px;
+}
+.content h1,
+.content h2,
+.content h3 {
+    text-align: center;
+}
+
+/* ---- рамка для звіту, вбудованого через iframe на головній ---- */
+.report-frame {
+    width: 100%;
+    height: calc(100vh - 40px);
+    border: none;
+    display: block;
+    background: #313244;
+}
+
+article {
+    margin-top: 30px;
+    margin-bottom: 30px;
+}
+
+    article h3 {
+        margin-bottom: 10px;
+        color: #b4befe;
+    }
+
+/* Заголовок коду — завжди видно */
+.code-header {
+    background: #45475a;
+    color: white;
+    padding: 10px 15px;
+    font-family: monospace;
+    cursor: pointer;
+    border-radius: 6px 6px 0 0;
+}
+
+/* Блок коду */
+.code-block pre {
+    max-height: 0; /* спочатку прихований */
+    overflow: hidden;
+    overflow-x: auto;
+    background: #1e1e2e;
+    color: #cdd6f4;
+    padding: 0 15px;
+    font-family: monospace;
+    white-space: pre;
+    transition: max-height 0.4s ease, padding 0.4s ease;
+    border-radius: 0 0 6px 6px;
+    margin: 3px auto;
+}
+
+.code-block.open pre {
+    max-height: 100000px;
+    padding: 15px;
+}
+
+.photo {
+    padding: 10px;
+    max-width: 30%;
+    display: block;
+    border-radius: 20px;
+    margin: 0 auto;
+}
+
+ul, ol {
+    padding-left: 20px;
+    list-style-position: outside;
+}
