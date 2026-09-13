@@ -1,6 +1,5 @@
 // ---------------------------------------------------------------------
-// Розгортає/згортає блок коду. Той самий принцип, що й раніше:
-// клік по заголовку перемикає клас 'open' на батьківському .code-block.
+// Розгортає/згортає блок коду
 // ---------------------------------------------------------------------
 function toggleCode(header) {
     const block = header.parentElement;
@@ -8,8 +7,7 @@ function toggleCode(header) {
 }
 
 // ---------------------------------------------------------------------
-// Перемикання між лабораторними — та сама логіка, що була у старому
-// проєкті (openLab): ховаємо всі секції й підменю, показуємо обрану.
+// Перемикання між лабораторними
 // ---------------------------------------------------------------------
 function openLab(labId, titleEl) {
     document.querySelectorAll('.lab-section').forEach((sec) => sec.classList.remove('active'));
@@ -25,14 +23,13 @@ function openLab(labId, titleEl) {
 }
 
 // ---------------------------------------------------------------------
-// Нижче виконується лише на index.html (має #lab-nav і #content).
+// Налаштування GitHub репозиторію
 // ---------------------------------------------------------------------
 const CONFIG = {
     owner: "Bilchman",
     repo: "KGV-Reports",
     branch: "main",
     path: "reports",
-    cacheMinutes: 5,
 };
 
 const IGNORED_FILES = new Set(["template.html", "_template.html", "readme.md", ".gitkeep"]);
@@ -41,6 +38,8 @@ const navEl = document.getElementById("lab-nav");
 const contentEl = document.getElementById("content");
 
 if (navEl && contentEl) {
+    // Очищаємо залишки старого кешу в браузері один раз
+    localStorage.clear();
     init();
 }
 
@@ -54,12 +53,11 @@ async function init() {
 }
 
 async function getReportFiles() {
-    const cacheKey = `reports-cache:${CONFIG.owner}/${CONFIG.repo}/${CONFIG.path}`;
-    const cached = readCache(cacheKey);
-    if (cached) return cached;
-
     const url = `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents/${CONFIG.path}?ref=${CONFIG.branch}`;
-    const res = await fetch(url, { headers: { Accept: "application/vnd.github+json" } });
+    const res = await fetch(url, { 
+        headers: { Accept: "application/vnd.github+json" },
+        cache: "no-store" // Забороняє браузеру кешувати відповідь
+    });
 
     if (!res.ok) {
         throw new Error(
@@ -75,10 +73,7 @@ async function getReportFiles() {
         .filter((e) => !IGNORED_FILES.has(e.name.toLowerCase()))
         .sort((a, b) => a.name.localeCompare(b.name));
 
-    const files = await Promise.all(candidates.map(describeFile));
-
-    writeCache(cacheKey, files);
-    return files;
+    return await Promise.all(candidates.map(describeFile));
 }
 
 async function describeFile(entry) {
@@ -96,7 +91,7 @@ async function describeFile(entry) {
     if (!isHtml) return base;
 
     try {
-        const res = await fetch(entry.download_url);
+        const res = await fetch(entry.download_url, { cache: "no-store" });
         const html = await res.text();
         const doc = new DOMParser().parseFromString(html, "text/html");
         const metaTitle = doc.querySelector('meta[name="report-title"]')?.content;
@@ -109,10 +104,6 @@ async function describeFile(entry) {
     return base;
 }
 
-// Перетворює "01-inheritance.html" на "01-inheritance" — використовується,
-// щоб зробити id розділів (Мета/Умова/...) унікальними для кожної лабораторної,
-// оскільки всі вони опиняються в одному DOM. У самому шаблоні id лишаються
-// простими (meta, condition, ...) — префікс додається тут автоматично.
 function slugify(filename) {
     return filename
         .replace(/\.[^.]+$/, "")
@@ -143,8 +134,6 @@ function render(files) {
 
     files.forEach((f) => {
         if (!f.isHtml) {
-            // Файли, що не є .html (напр. випадковий .pdf) — звичайне посилання,
-            // відкривається в новій вкладці, без вбудовування в сторінку.
             navEl.insertAdjacentHTML(
                 "beforeend",
                 `<a class="lab-title" style="display:block;text-decoration:none;"
@@ -165,12 +154,19 @@ function render(files) {
              </div>`
         );
 
-        // Робимо id розділів унікальними для цієї лабораторної (meta -> slug-meta)
-        // перед вставкою в спільний DOM, щоб уникнути колізій між звітами.
         const temp = document.createElement("div");
         temp.innerHTML = f.contentHtml;
+        
         temp.querySelectorAll("article[id]").forEach((art) => {
             art.id = `${f.slug}-${art.id}`;
+        });
+
+        // Автоматично прибирає зайвий "/" на початку шляхів (для коректної роботи на GitHub Pages)
+        temp.querySelectorAll("img, video, source").forEach((el) => {
+            const src = el.getAttribute("src");
+            if (src && src.startsWith("/")) {
+                el.setAttribute("src", src.replace(/^\/+/, ""));
+            }
         });
 
         contentEl.insertAdjacentHTML(
@@ -180,26 +176,6 @@ function render(files) {
     });
 
     document.querySelector(".lab-title")?.click();
-}
-
-function readCache(key) {
-    try {
-        const raw = localStorage.getItem(key);
-        if (!raw) return null;
-        const { savedAt, files } = JSON.parse(raw);
-        if (Date.now() - savedAt > CONFIG.cacheMinutes * 60 * 1000) return null;
-        return files;
-    } catch {
-        return null;
-    }
-}
-
-function writeCache(key, files) {
-    try {
-        localStorage.setItem(key, JSON.stringify({ savedAt: Date.now(), files }));
-    } catch {
-        // сховище недоступне (напр. приватний режим) — просто пропускаємо кеш
-    }
 }
 
 function escapeHtml(str) {
