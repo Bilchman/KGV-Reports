@@ -145,7 +145,7 @@ article {
 }
 
 .code-block.open pre {
-    max-height: auto;
+    max-height: 100000px;
     padding: 15px;
 }
 
