@@ -659,39 +659,45 @@ if __name__ == "__main__":
         <!-- Якщо файлів коду кілька — скопіюй весь article.code-block вище
              ще раз і зміни id (напр. code-2) та назву у code-header -->
 
-        <article id="examples">
+        <article id="examples" class="code-block">
             <h3>Приклади</h3>
-            
-            <p>Натиснувши на кнопку "Open Image" користувачу відкриється вікно для вибору одного фото:</p>
-            <p><img src="photos/lab01/preview1.png" class="photo" alt="Прев'ю 1" /></p>
-
-            <p>Обравши фото користувач одразу зможе змінити його розміри на вкладці "Resize" з можливістю збереження співвідношення сторін:</p>
-            <p><img src="photos/lab01/preview2.png" class="photo" alt="Прев'ю 2" /></p>
-
-            <p>Вкладка "Balance" дозволяє змінити кольоровий баланс як одного кольорового каналу, так і загальний баланс одразу:</p>
-            <p><img src="photos/lab01/preview3.png" class="photo" alt="Прев'ю 3" /></p>
-
-            <p>Вкладка "Recolor" дозволяє користувачу обрати який колір має бути замінений та на який його замінити, маючи можливість регулювати інтенсивність заміни:</p>
-            <p><img src="photos/lab01/preview4.png" class="photo" alt="Прев'ю 4" /></p>
-
-            <p>Натиснувши кнопку "Save Image" користувачу відкриється вікно з вибором місця для збереження, формату та назви фото:</p>
-            <p><img src="photos/lab01/preview5.png" class="photo" alt="Прев'ю 5" /></p>
-
-            <p>Також є можливість одночасної обробки багатьох фото при натисканні кнопки "Batch" яка відкриє нове вікно де користувач зможе одразу обрати фото які треба редагувати, місце збереження, розмір та формат:</p>
-            <p><img src="photos/lab01/preview6.png" class="photo" alt="Прев'ю 6" /></p>
+            <div class="code-header" onclick="toggleCode(this)">
+                Приклад використання
+            </div>
+            <pre><code>
+Натиснувши на кнопку "Open Image" користувачу відкриється вікно для вибору одного фото:
+<p><img src="/photos/lab01/preview1.png" class="photo" /></p>
+Обравши фото користувач одразу зможе змінити його розміри на вкладці "Resize" з можливістю збереження співвідношення сторін:
+<p><img src="/photos/lab01/preview2.png" class="photo" /></p>
+Вкладка "Balance" дозволяє змінити кольоровий баланс як одного кольорового каналу, так і загальний баланс одразу:
+<p><img src="/photos/lab01/preview3.png" class="photo" /></p>
+Вкладка "Recolor" дозволяє користувачу обрати який колір має бути замінений та на який його замінити, маючи можливість регулювати інтенсивність заміни:
+<p><img src="/photos/lab01/preview4.png" class="photo" /></p>
+Натиснувши кнопку "Save Image" користувачу відкриється вікно з вибором місця для збереження, формату та назви фото:
+<p><img src="/photos/lab01/preview5.png" class="photo" /></p>
+Також є можливість одночасної обробки багатьох фото при натисканні кнопки "Batch" яка відкриє нове вікно де користувач зможе одразу обрати фото які треба редагувати, місце збереження, розмір та формат:
+<p><img src="/photos/lab01/preview6.png" class="photo" /></p>
+</code></pre>
         </article>
 
         <article id="tests">
             <h3>Перевірки</h3>
 
-            <div>
-                <h4>Відео демонстрації роботи:</h4>
-                <p>Тестування функціоналу програми в реальному часі.</p>
-                <video autoplay loop muted playsinline controls style="max-width: 80%; display: block; margin: 15px auto; border-radius: 8px;">
-                    <source src="photos/lab01/test1.mp4" type="video/mp4">
-                    Your browser does not support the video tag.
-                </video>
+            <!-- Один блок = один тестовий випадок. Скопіюй div.code-block
+                 стільки разів, скільки тестів показуєш. -->
+            <div class="code-block">
+                <div class="code-header" onclick="toggleCode(this)">
+                    Опис перевірки 1
+                </div>
+                <pre>
+Опис вхідних даних і очікуваного результату.
+<video autoplay loop muted playsinline controls width="100%">
+  <source src="/photos/lab01/test1.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+                </pre>
             </div>
+
 
             <div class="code-block">
                 <div class="code-header" onclick="toggleCode(this)">
