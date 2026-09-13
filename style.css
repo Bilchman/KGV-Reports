@@ -61,6 +61,7 @@ body {
 .submenu-wrap {
     display: grid;
     grid-template-rows: 0fr;
+    grid-template-columns: minmax(0, 1fr);
     transition: grid-template-rows 0.3s ease;
     margin-left: 15px;
 }
@@ -131,6 +132,7 @@ article {
 .code-collapse {
     display: grid;
     grid-template-rows: 0fr;
+    grid-template-columns: minmax(0, 1fr);
     transition: grid-template-rows 0.3s ease;
 }
 .code-block.open .code-collapse {
@@ -138,15 +140,17 @@ article {
 }
 
 .code-collapse pre {
-    overflow: hidden;
     min-height: 0;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
     background: #1e1e2e;
     color: #cdd6f4;
     padding: 15px;
     font-family: monospace;
     white-space: pre;
     border-radius: 0 0 6px 6px;
-    margin: 3px auto;
+    margin: 3px 0;
 }
 
 .photo {
