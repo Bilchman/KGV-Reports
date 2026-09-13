@@ -129,28 +129,24 @@ article {
 
 /* Блок коду — плавне розгортання без "стрибка" (grid-rows замість
    величезного max-height) */
-.code-collapse {
-    display: grid;
-    grid-template-rows: 0fr;
-    grid-template-columns: minmax(0, 1fr);
-    transition: grid-template-rows 0.3s ease;
-}
-.code-block.open .code-collapse {
-    grid-template-rows: 1fr;
-}
-
-.code-collapse pre {
-    min-height: 0;
-    min-width: 0;
+/* Блок коду — оригінальна логіка з твого проєкту */
+.code-block pre {
+    max-height: 0; /* спочатку прихований */
+    overflow: hidden;
     overflow-x: auto;
-    overflow-y: hidden;
     background: #1e1e2e;
     color: #cdd6f4;
-    padding: 15px;
+    padding: 0 15px;
     font-family: monospace;
     white-space: pre;
+    transition: max-height 0.4s ease, padding 0.4s ease;
     border-radius: 0 0 6px 6px;
-    margin: 3px 0;
+    margin: 3px auto;
+}
+
+.code-block.open pre {
+    max-height: 100000px;
+    padding: 15px;
 }
 
 .photo {
