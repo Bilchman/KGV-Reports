@@ -1,0 +1,739 @@
+<!--
+  ============================================================================
+  ШАБЛОН ЗВІТУ / REPORT TEMPLATE
+  ============================================================================
+  HOW TO USE THIS FILE:
+  1. Copy it to a new name in the SAME "reports" folder, e.g. "02-inheritance.html"
+     — the leading number controls where it appears in the list on the homepage,
+     so keep files zero-padded (01, 02, ... 10) so they sort correctly.
+  2. Fill in every spot marked ЗАПОВНІТЬ (fill in) with your actual content.
+  3. Update <meta name="report-title"> in the <head> — that's what shows up
+     in the sidebar list on the homepage, not the filename.
+  4. Keep the article id's exactly as they are (meta, condition, code, ...)
+     — the homepage makes them unique per report automatically, you don't
+     need to rename or prefix anything yourself.
+  5. Image paths are relative to the SITE ROOT (not to this file), because
+     this content gets embedded directly into index.html. So always write
+     "photos/..." — never "../photos/...".
+  6. Upload the finished file into reports/ on GitHub (Add file → Upload
+     files). Nothing else needs to change — the homepage picks it up
+     automatically.
+
+  Note: this file is meant to be viewed through index.html, not opened
+  directly — opening it standalone will show the content without the
+  sidebar/navigation.
+  ============================================================================
+-->
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- ЗАПОВНІТЬ: цей рядок визначає назву у списку на головній -->
+    <meta name="report-title" content="Лабораторна робота №1">
+
+    <title>ЛР №1 — Більчук Нікіта ІПЗ-14</title>
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+    <div class="content">
+
+        <!-- ЗАПОВНІТЬ: заголовок і тема/варіант лабораторної -->
+        <h1>Лабораторна робота №1<br></h1>
+        <h2>Розробка програми для обробки зображень: конвертація форматів,
+зміна розміру, перетворення кольорів та корекція колірного балансу.</h2>
+
+        <article id="meta">
+            <h3>Мета</h3>
+            <ol>
+                ознайомитися з основними принципами обробки зображень за
+допомогою програмного забезпечення; навчитися реалізовувати програму для
+конвертації форматів зображень, зміни розміру, перетворення кольорів та
+здійснення корекції колірного балансу; дослідити вплив різних операцій на розмір
+і якість зображень, а також розвинути практичні навички роботи з графічними
+бібліотеками для реалізації зазначених функцій.
+            </ol>
+        </article>
+
+        <article id="condition">
+            <h3>Умова</h3>
+            <!-- ЗАПОВНІТЬ: текст умови завдання -->
+            <p>Для виконання лабораторної роботи можна використовувати будь-яку мову
+програмування та бібліотеки для роботи із зображеннями.</p>
+            <ol>
+                <li>Конвертація форматів зображень<br/>
+Реалізуйте програму, яка дозволяє користувачеві конвертувати зображення з
+одного формату у інший. Забезпечте можливість вибору користувачем вхідного
+зображення, вихідного формату зображення та обрання шляху для збереження
+зображення у новому форматі. Додайте можливість для конвертації формату
+декількох зображень за один запуск програми. Порівняйте, як змінився розмір
+зображень при збереженні їх у різному форматі.</li>
+                <li>Конвертація розміру зображень<br/>
+До попередньої програми додайте можливість користувачеві змінити розмір
+зображення. Забезпечте можливість вибору користувачем вихідного значення
+розміру зображення, а також можливість змінити розмір зображення за значенням
+висоти або ширини без зміни співвідношення сторін. Створіть можливість для
+збереження конвертованого зображення. Додайте можливість для конвертації
+розміру декількох зображень за один запуск програми.</li>
+                <li>Перетворення кольорів<br/>
+До попередньої програми додайте можливість здійснювати перетворення
+кольорів зображення. Програма має надавати можливість користувачу вибрати
+зображення та змінити всі пікселі певного кольору на інший колір. Створіть
+можливість для збереження перетвореного зображення.</li>
+                <li>Корекція колірного балансу<br/>
+До попередньої програми додайте можливість здійснювати корекцію
+колірного балансу зображення. Програма має надавати можливість користувачу
+обирати, яким чином коригувати яскравість пікселів, наприклад, збільшити
+червоний, збільшити зелений, збільшити синій або виконати загальну корекцію.
+Створіть можливість для збереження зображення зі зміненим колірним балансом.</li>
+            </ol>
+        </article>
+
+        <article id="analysis">
+            <h3>Аналіз</h3>
+            <!-- ЗАПОВНІТЬ: короткий аналіз задачі / підхід до розв'язання -->
+            <p>Опис аналізу задачі.</p>
+        </article>
+
+        <article id="diagram">
+            <h3>Діаграма класів</h3>
+            <!-- ЗАПОВНІТЬ: заміни шлях на своє зображення (шлях від кореня сайту) -->
+            <p><img src="photos/lab01/classDiagram.png" class="photo" /></p>
+        </article>
+
+        <article id="code" class="code-block">
+            <h3>Код</h3>
+            <div class="code-header" onclick="toggleCode(this)">
+                lab01.py
+            </div>
+            <pre><code>
+
+import os
+import tkinter as tk
+from dataclasses import dataclass
+from pathlib import Path
+from tkinter import colorchooser, filedialog, messagebox, ttk
+import numpy as np
+from PIL import Image, ImageTk
+
+
+@dataclass
+class EditSpec:
+    width: int = None
+    height: int = None
+    r: float = 1.0
+    g: float = 1.0
+    b: float = 1.0
+    old_color: tuple = None
+    new_color: tuple = None
+    tolerance: float = 0.0
+
+
+class ImageEditorLogic:
+    @staticmethod
+    def resize(image: Image.Image, width: int, height: int) -> Image.Image:
+        width = max(1, int(width))
+        height = max(1, int(height))
+        return image.resize((width, height), Image.Resampling.LANCZOS)
+
+    @staticmethod
+    def define_color_scheme(image: Image.Image) -> Image.Image:
+        if image.mode in ("RGB", "RGBA"):
+            return image
+        return image.convert("RGBA")
+
+    @staticmethod
+    def balance(image: Image.Image, r_scale: float, g_scale: float, b_scale: float) -> Image.Image:
+        img = ImageEditorLogic.define_color_scheme(image)
+        data = np.array(img, dtype = np.float32)
+        data[..., 0] *= r_scale
+        data[..., 1] *= g_scale
+        data[..., 2] *= b_scale
+        data = np.clip(data, 0, 255).astype(np.uint8)
+        return Image.fromarray(data)
+
+    @staticmethod
+    def recolor(image: Image.Image, old_rgb: tuple, new_rgb: tuple, tolerance: float = 20.0) -> Image.Image:
+        img = ImageEditorLogic.define_color_scheme(image)
+        data = np.array(img, dtype = np.int32)
+
+        rgb = data[..., :3]
+        target = np.array(old_rgb[:3], dtype = np.int32)
+        distance = np.sqrt(np.sum((rgb - target) ** 2, axis = -1))
+        mask = distance <= tolerance
+
+        data[..., :3][mask] = new_rgb[:3]
+        return Image.fromarray(data.astype(np.uint8))
+
+    @staticmethod
+    def resize_keep_aspect(image: Image.Image, width: int = None, height: int = None) -> Image.Image:
+        if not width and not height:
+            return image
+
+        orig_w, orig_h = image.width, image.height
+        if width and height:
+            return ImageEditorLogic.resize(image, width, height)
+        if width:
+            height = max(1, int(width * (orig_h / orig_w)))
+        else:
+            width = max(1, int(height * (orig_w / orig_h)))
+        return ImageEditorLogic.resize(image, width, height)
+
+    @staticmethod
+    def apply(image: Image.Image, spec: EditSpec) -> Image.Image:
+        img = image.copy()
+
+        if spec.tolerance > 0:
+            img = ImageEditorLogic.recolor(img, spec.old_color, spec.new_color, spec.tolerance)
+
+        if (spec.r, spec.g, spec.b) != (1.0, 1.0, 1.0):
+            img = ImageEditorLogic.balance(img, spec.r, spec.g, spec.b)
+
+        if spec.width and spec.height:
+            if (spec.width, spec.height) != (img.width, img.height):
+                img = ImageEditorLogic.resize(img, spec.width, spec.height)
+        elif spec.width or spec.height:
+            img = ImageEditorLogic.resize_keep_aspect(img, spec.width, spec.height)
+
+        return img
+
+
+class ImageIO:
+
+    FORMAT_MAP = {
+        ".png": "PNG",
+        ".jpg": "JPEG",
+        ".jpeg": "JPEG",
+        ".webp": "WEBP",
+        ".bmp": "BMP",
+    }
+
+    @staticmethod
+    def read_image(path):
+        with Image.open(path) as raw:
+            return raw.convert("RGBA")
+
+    @staticmethod
+    def load_image(parent = None):
+        path = filedialog.askopenfilename(parent = parent, filetypes = [("Images", "*.jpg *.jpeg *.png *.webp *.bmp *.tif *.tiff")])
+        if not path:
+            return None, None
+
+        try:
+            img = ImageIO.read_image(path)
+            return img, path
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not load image:\n{e}", parent = parent)
+            return None, None
+
+    @staticmethod
+    def resolve_save_format(path: Path, chosen_type: str = "PNG"):
+        ext = path.suffix.lower()
+        if ext in ImageIO.FORMAT_MAP:
+            return path, ImageIO.FORMAT_MAP[ext]
+
+        format = ImageIO.FORMAT_MAP.get(f".{chosen_type.lower()}", "PNG")
+        new_ext = next(i for i, j in ImageIO.FORMAT_MAP.items() if j == format)
+        return path.with_suffix(new_ext), format
+
+    @staticmethod
+    def write_image(image, path, format):
+        out = image
+        if format in {"JPEG", "BMP"} and out.mode in {"RGBA", "LA", "P"}:
+            out = out.convert("RGB")
+
+        save_options = {}
+        if format in {"JPEG", "WEBP"}:
+            save_options["quality"] = 100
+
+        out.save(path, format = format, **save_options)
+
+    @staticmethod
+    def save_image(image, parent = None):
+        if not image:
+            messagebox.showwarning("Warning", "No image to save.", parent = parent)
+            return
+
+        chosen_type = tk.StringVar(parent)
+
+        file_path = filedialog.asksaveasfilename(parent = parent, title = "Save Image", defaultextension = "", typevariable = chosen_type,
+            filetypes = [("PNG", "*.png"),
+                         ("JPEG", "*.jpg"),
+                         ("WEBP", "*.webp"),
+                         ("BMP", "*.bmp")])
+
+        if not file_path:
+            return
+
+        path, format = ImageIO.resolve_save_format(Path(file_path), chosen_type.get())
+
+        try:
+            ImageIO.write_image(image, path, format)
+            messagebox.showinfo("Saved", f"Successfully saved as {format}!\n\nFile: {path}", parent = parent)
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not save file:\n{e}", parent = parent)
+
+
+@dataclass
+class BatchSpec:
+    input_paths: list
+    output_dir: str
+    format_choice: str = "Keep Original"
+    edit_spec: EditSpec = None
+
+
+class BatchProcessor:
+
+    @staticmethod
+    def resolve_output(path: Path, out_dir: Path, format_choice: str):
+        if format_choice == "Keep Original":
+            ext = path.suffix.lower()
+            format = ImageIO.FORMAT_MAP.get(ext, "PNG")
+        else:
+            format = format_choice
+            ext = f".{format_choice.lower()}"
+            if ext == ".jpeg":
+                ext = ".jpg"
+
+        return out_dir / f"{path.stem}_batch{ext}", format
+
+    @staticmethod
+    def run(spec: BatchSpec, on_error = None):
+        out_dir = Path(spec.output_dir)
+        count = 0
+        edit_spec = spec.edit_spec if spec.edit_spec is not None else EditSpec()
+
+        for file_path in spec.input_paths:
+            path = Path(file_path)
+            try:
+                img = ImageIO.read_image(path)
+                img = ImageEditorLogic.apply(img, edit_spec)
+
+                out_path, format = BatchProcessor.resolve_output(path, out_dir, spec.format_choice)
+                ImageIO.write_image(img, out_path, format)
+                count += 1
+            except Exception as e:
+                if on_error:
+                    on_error(file_path, e)
+
+        return count
+
+
+class BatchWindow(tk.Toplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.title("Batch Processing")
+        self.geometry("380x350")
+        self.resizable(False, False)
+        self.transient(parent)
+        self.grab_set()
+
+        self.input_paths = []
+        self.output_dir = ""
+
+        self.setup_ui()
+
+    def setup_ui(self):
+        frame = ttk.Frame(self, padding=15)
+        frame.pack(fill="both", expand=True)
+
+        # 1. Select Files Button
+        ttk.Label(frame, text="1. Select Input Images:", font=("", 10, "bold")).pack(anchor="w", pady=(0, 2))
+        row1 = ttk.Frame(frame)
+        row1.pack(fill="x", pady=(0, 10))
+        ttk.Button(row1, text="Browse Images...", command=self.select_files).pack(side="left")
+        self.lbl_files = ttk.Label(row1, text="No images chosen")
+        self.lbl_files.pack(side="left", padx=8)
+
+        # 2. Select Output Folder Button
+        ttk.Label(frame, text="2. Select Destination Folder:", font=("", 10, "bold")).pack(anchor="w", pady=(0, 2))
+        row2 = ttk.Frame(frame)
+        row2.pack(fill="x", pady=(0, 10))
+        ttk.Button(row2, text="Browse Folder...", command=self.select_folder).pack(side="left")
+        self.lbl_folder = ttk.Label(row2, text="No folder chosen", wraplength=180)
+        self.lbl_folder.pack(side="left", padx=8)
+
+        # 3. Resize Options
+        ttk.Label(frame, text="3. Resize Options (Optional):", font=("", 10, "bold")).pack(anchor="w", pady=(0, 2))
+        dim_frame = ttk.Frame(frame)
+        dim_frame.pack(fill="x", pady=(0, 10))
+        ttk.Label(dim_frame, text="Width:").pack(side="left")
+        self.ent_w = ttk.Entry(dim_frame, width=8)
+        self.ent_w.pack(side="left", padx=(4, 12))
+        ttk.Label(dim_frame, text="Height:").pack(side="left")
+        self.ent_h = ttk.Entry(dim_frame, width=8)
+        self.ent_h.pack(side="left", padx=4)
+
+        # 4. Output Format
+        ttk.Label(frame, text="4. Output Format:", font=("", 10, "bold")).pack(anchor="w", pady=(0, 2))
+        self.format_var = tk.StringVar(value="Keep Original")
+        format_combo = ttk.Combobox(
+            frame, 
+            textvariable=self.format_var, 
+            values=["Keep Original", "PNG", "JPEG", "WEBP", "BMP"], 
+            state="readonly"
+        )
+        format_combo.pack(fill="x", pady=(0, 15))
+
+        # Start Processing Button
+        ttk.Button(frame, text="Start Batch Processing", command=self.run_batch).pack(fill="x")
+
+    def select_files(self):
+        paths = filedialog.askopenfilenames(
+            parent=self,
+            title="Select Images for Batch",
+            filetypes=[("Images", "*.jpg *.jpeg *.png *.webp *.bmp *.tif *.tiff")]
+        )
+        if paths:
+            self.input_paths = list(paths)
+            self.lbl_files.config(text=f"{len(self.input_paths)} image(s)")
+
+    def select_folder(self):
+        folder = filedialog.askdirectory(parent=self, title="Select Output Folder")
+        if folder:
+            self.output_dir = folder
+            self.lbl_folder.config(text=Path(folder).name or folder)
+
+    def run_batch(self):
+        if not self.input_paths:
+            messagebox.showwarning("Warning", "Please select input images first.", parent=self)
+            return
+        if not self.output_dir:
+            messagebox.showwarning("Warning", "Please select an output folder first.", parent=self)
+            return
+
+        w_str = self.ent_w.get().strip()
+        h_str = self.ent_h.get().strip()
+        target_w = int(w_str) if w_str.isdigit() and int(w_str) > 0 else None
+        target_h = int(h_str) if h_str.isdigit() and int(h_str) > 0 else None
+
+        spec = BatchSpec(
+            input_paths=self.input_paths,
+            output_dir=self.output_dir,
+            format_choice=self.format_var.get(),
+            edit_spec=EditSpec(width=target_w, height=target_h),
+        )
+
+        count = BatchProcessor.run(spec, on_error=lambda file_path, e: print(f"Skipped {file_path}: {e}"))
+
+        messagebox.showinfo("Batch Complete", f"Successfully processed {count} image(s).", parent=self.master)
+        self.destroy()
+
+class UI:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Image Editor")
+        self.root.geometry("960x600")
+
+        self.original = None
+        self.edited = None
+        self.preview = None
+        self.aspect_ratio = 1.0
+        self.is_updating = False
+        self.file_path = None
+
+        self.old_color = (255, 255, 255)
+        self.new_color = (255, 0, 0)
+
+        self.setupUI()
+
+    def setupUI(self):
+        left_panel = ttk.Frame(self.root, padding = 10)
+        left_panel.pack(side = "left", fill = "y")
+
+        # Open / Save Buttons
+        btn_frame = ttk.Frame(left_panel)
+        btn_frame.pack(fill = "x", pady = (0, 10))
+
+        ttk.Button(btn_frame, text = "Open Image...", command = self.load_image).pack(side = "left", fill = "x", expand = True, padx = (0, 4))
+        ttk.Button(btn_frame, text = "Save Image...", command = self.save_image).pack(side = "right", fill = "x", expand = True, padx = (4, 0))
+        ttk.Button(btn_frame, text = "Batch...", command = self.open_batch_window).pack(side = "right", fill = "x", expand = True, padx = (2, 0))
+
+        # Tabbed Control Notebook
+        self.tabs = ttk.Notebook(left_panel)
+        self.tabs.pack(fill = "both", expand = True)
+
+        # Resize
+        tab_resize = ttk.Frame(self.tabs, padding = 10)
+        self.tabs.add(tab_resize, text = "Resize")
+
+        self.keep_aspect = tk.BooleanVar(value = True)
+        ttk.Checkbutton(tab_resize, text = "Maintain aspect ratio", variable = self.keep_aspect).pack(anchor = "w", pady = (0, 10))
+
+        ttk.Label(tab_resize, text = "Width (px):").pack(anchor = "w")
+        self.width = tk.StringVar()
+        self.width.trace_add("write", lambda *_: self.on_dimension_change("w"))
+        self.ent_width = ttk.Entry(tab_resize, textvariable = self.width)
+        self.ent_width.pack(fill = "x", pady = (0, 8))
+
+        ttk.Label(tab_resize, text = "Height (px):").pack(anchor="w")
+        self.height = tk.StringVar()
+        self.height.trace_add("write", lambda *_: self.on_dimension_change("h"))
+        self.ent_height = ttk.Entry(tab_resize, textvariable = self.height)
+        self.ent_height.pack(fill = "x")
+
+        # Color Balance
+        tab_balance = ttk.Frame(self.tabs, padding = 10)
+        self.tabs.add(tab_balance, text = "Balance")
+        
+        self.overall_scale = self.create_slider(tab_balance, "Overall Balance:")
+        self.r_scale = self.create_slider(tab_balance, "Red:")
+        self.g_scale = self.create_slider(tab_balance, "Green:")
+        self.b_scale = self.create_slider(tab_balance, "Blue:")
+
+        ttk.Button(tab_balance, text = "Reset Colors", command = self.reset_colors).pack(pady = 12)
+
+        # Recolor
+        tab_recolor = ttk.Frame(self.tabs, padding = 10)
+        self.tabs.add(tab_recolor, text = "Recolor")
+
+        # Pick Target Color
+        ttk.Label(tab_recolor, text = "Target Color:").pack(anchor = "w", pady = (5, 2))
+        col_row1 = ttk.Frame(tab_recolor)
+        col_row1.pack(fill = "x", pady = (0, 8))
+
+        self.swatch_old = tk.Label(col_row1, width = 4, bg = "#ffffff", relief = "solid", bd = 1)
+        self.swatch_old.pack(side = "left", padx = (0, 8))
+        ttk.Button(col_row1, text = "Choose...", command = self.pick_target_color).pack(side = "left")
+
+        # Pick Replacement Color
+        ttk.Label(tab_recolor, text = "Replace With:").pack(anchor = "w", pady = (5, 2))
+        col_row2 = ttk.Frame(tab_recolor)
+        col_row2.pack(fill = "x", pady = (0, 8))
+
+        self.swatch_new = tk.Label(col_row2, width = 4, bg = "#ff0000", relief = "solid", bd = 1)
+        self.swatch_new.pack(side = "left", padx = (0, 8))
+        ttk.Button(col_row2, text = "Choose...", command = self.pick_replace_color).pack(side = "left")
+
+        # Tolerance Slider
+        ttk.Label(tab_recolor, text = "Tolerance:").pack(anchor = "w", pady = (5, 0))
+        self.tolerance_scale = ttk.Scale(tab_recolor, from_ = 0, to = 120, value = 0, command = lambda _: self.apply_edits())
+        self.tolerance_scale.pack(fill="x", pady=(0, 10))
+
+        ttk.Button(tab_recolor, text = "Reset Recolor", command = self.reset_recolor).pack(pady=6)
+
+        # Right Panel
+        self.canvas = tk.Canvas(self.root, bg = "#e5e5e5")
+        self.canvas.pack(side = "right", fill = "both", expand = True, padx = 10, pady = 10)
+        self.canvas.bind("<Configure>", lambda e: self.update_preview())
+
+    def open_batch_window(self):
+        BatchWindow(self.root)
+
+    def create_slider(self, parent, label_text):
+        ttk.Label(parent, text = label_text).pack(anchor = "w", pady = (5, 0))
+        slider = ttk.Scale(parent, from_=0.0, to=2.0, value=1.0, command=lambda _: self.apply_edits())
+        slider.pack(fill = "x")
+        return slider
+
+    def pick_target_color(self):
+        color = colorchooser.askcolor(title = "Select Color to Replace")[0]
+        if color:
+            self.old_color = tuple(map(int, color))
+            hex = f"#{self.old_color[0]:02x}{self.old_color[1]:02x}{self.old_color[2]:02x}"
+            self.swatch_old.configure(bg = hex)
+            self.apply_edits()
+
+    def pick_replace_color(self):
+        color = colorchooser.askcolor(title="Select Replacement Color")[0]
+        if color:
+            self.new_color = tuple(map(int, color))
+            hex = f"#{self.new_color[0]:02x}{self.new_color[1]:02x}{self.new_color[2]:02x}"
+            self.swatch_new.configure(bg = hex)
+            self.apply_edits()
+
+    def reset_colors(self):
+        self.overall_scale.set(1.0)
+        self.r_scale.set(1.0)
+        self.g_scale.set(1.0)
+        self.b_scale.set(1.0)
+        self.apply_edits()
+
+    def reset_recolor(self):
+        self.tolerance_scale.set(0)
+        self.apply_edits()
+
+    def on_dimension_change(self, changed_side):
+        if self.is_updating or not self.original:
+            return
+
+        try:
+            self.is_updating = True
+            if changed_side == "w" and self.keep_aspect.get():
+                val = self.width.get().strip()
+                if val.isdigit() and int(val) > 0:
+                    new_height = max(1, int(int(val) / self.aspect_ratio))
+                    self.height.set(str(new_height))
+            elif changed_side == "h" and self.keep_aspect.get():
+                val = self.height.get().strip()
+                if val.isdigit() and int(val) > 0:
+                    new_width = max(1, int(int(val) * self.aspect_ratio))
+                    self.width.set(str(new_width))
+            self.is_updating = False
+            self.apply_edits()
+        except Exception:
+            self.is_updating = False
+
+    def apply_edits(self):
+        if self.original is None:
+            return
+
+        overall = self.overall_scale.get()
+        spec = EditSpec(
+            r = self.r_scale.get() * overall,
+            g = self.g_scale.get() * overall,
+            b = self.b_scale.get() * overall,
+            old_color = self.old_color,
+            new_color = self.new_color,
+            tolerance = self.tolerance_scale.get(),
+        )
+
+        try:
+            width = int(self.width.get())
+            height = int(self.height.get())
+            if width > 0 and height > 0:
+                spec.width = width
+                spec.height = height
+        except (ValueError, TypeError):
+            pass
+
+        self.edited = ImageEditorLogic.apply(self.original, spec)
+        self.update_preview()
+
+    def update_preview(self):
+        if not self.edited:
+            return
+
+        canvas_width = self.canvas.winfo_width()
+        canvas_height = self.canvas.winfo_height()
+        if canvas_width < 20 or canvas_height < 20:
+            return
+
+        preview = self.edited.copy()
+        preview.thumbnail((canvas_width - 16, canvas_height - 16), Image.Resampling.LANCZOS)
+
+        self.preview = ImageTk.PhotoImage(preview)
+        self.canvas.delete("all")
+        self.canvas.create_image(canvas_width // 2, canvas_height // 2, image = self.preview)
+
+    def reset_edits(self):
+        self.overall_scale.set(1.0)
+        self.r_scale.set(1.0)
+        self.g_scale.set(1.0)
+        self.b_scale.set(1.0)
+        self.tolerance_scale.set(0)
+
+        self.is_updating = True
+        self.width.set(str(self.original.width))
+        self.height.set(str(self.original.height))
+        self.is_updating = False
+
+        self.canvas.delete("all")
+        self.apply_edits()
+
+    def load_image(self):
+        img, path = ImageIO.load_image(parent = self.root)
+        if not img:
+            return
+
+        self.original = img
+        self.file_path = path
+        self.aspect_ratio = self.original.width / self.original.height
+
+        self.reset_edits()
+
+    def save_image(self):
+        ImageIO.save_image(self.edited, parent = self.root)
+
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = UI(root)
+    root.mainloop()
+
+</code></pre>
+        </article>
+
+        <!-- Якщо файлів коду кілька — скопіюй весь article.code-block вище
+             ще раз і зміни id (напр. code-2) та назву у code-header -->
+
+        <article id="examples" class="code-block">
+            <h3>Приклади</h3>
+            <div class="code-header" onclick="toggleCode(this)">
+                Приклад використання
+            </div>
+            <pre><code>
+<p><img src="photos/lab01/video.mp4" class="photo" /></p>
+</code></pre>
+        </article>
+
+        <article id="tests">
+            <h3>Перевірки</h3>
+
+            <!-- Один блок = один тестовий випадок. Скопіюй div.code-block
+                 стільки разів, скільки тестів показуєш. -->
+            <div class="code-block">
+                <div class="code-header" onclick="toggleCode(this)">
+                    Опис перевірки 1
+                </div>
+                <pre>
+Опис вхідних даних і очікуваного результату.
+<img src="photos/lab01/1.png" class="photo" />
+                </pre>
+            </div>
+
+            <div class="code-block">
+                <div class="code-header" onclick="toggleCode(this)">
+                    Опис перевірки 1
+                </div>
+                <pre>
+Опис вхідних даних і очікуваного результату.
+<img src="photos/lab01/1.png" class="photo" />
+                </pre>
+            </div>
+
+            <div class="code-block">
+                <div class="code-header" onclick="toggleCode(this)">
+                    Опис перевірки 1
+                </div>
+                <pre>
+Опис вхідних даних і очікуваного результату.
+<img src="photos/lab01/1.png" class="photo" />
+                </pre>
+            </div>
+
+            <div class="code-block">
+                <div class="code-header" onclick="toggleCode(this)">
+                    Опис перевірки 1
+                </div>
+                <pre>
+Опис вхідних даних і очікуваного результату.
+<img src="photos/lab01/1.png" class="photo" />
+                </pre>
+            </div>
+
+            <div class="code-block">
+                <div class="code-header" onclick="toggleCode(this)">
+                    Опис перевірки 1
+                </div>
+                <pre>
+Опис вхідних даних і очікуваного результату.
+<img src="photos/lab01/1.png" class="photo" />
+                </pre>
+            </div>
+        </article>
+
+        <article id="conclusion">
+            <h3>Висновки</h3>
+            <!-- ЗАПОВНІТЬ: висновки по роботі -->
+            <p>
+                Текст висновків.
+            </p>
+        </article>
+
+    </div>
+
+</body>
+</html>
