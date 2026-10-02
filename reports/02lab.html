@@ -128,7 +128,27 @@
 				</div>
 				<div class="code-collapse">
 					<pre><code>
-// ЗАПОВНІТЬ: встав сюди код файлу
+from dataclasses import dataclass
+
+@dataclass
+class EditSpec:
+    width: int = None
+    height: int = None
+    r: float = 1.0
+    g: float = 1.0
+    b: float = 1.0
+    alpha: float = 1.0
+    contrast: float = 1.0
+    old_color: tuple = None
+    new_color: tuple = None
+    tolerance: float = 0.0
+
+@dataclass
+class BatchSpec:
+    input_paths: list
+    output_dir: str
+    format_choice: str = "Keep Original"
+    edit_spec: EditSpec = None
 </code></pre>
 				</div>
 			</div>
@@ -138,7 +158,247 @@
 				</div>
 				<div class="code-collapse">
 					<pre><code>
-// ЗАПОВНІТЬ: встав сюди код файлу
+import tkinter as tk
+from tkinter import filedialog, messagebox
+from pathlib import Path
+import numpy as np
+from PIL import Image
+
+from data import EditSpec, BatchSpec
+
+class ImageEditorLogic:
+    @staticmethod
+    def resize(image: Image.Image, width: int, height: int) -> Image.Image:
+        width = max(1, int(width))
+        height = max(1, int(height))
+        return image.resize((width, height), Image.Resampling.LANCZOS)
+
+    @staticmethod
+    def define_color_scheme(image: Image.Image) -> Image.Image:
+        if image.mode in ("RGB", "RGBA"):
+            return image
+        return image.convert("RGBA")
+
+    @staticmethod
+    def balance(image: Image.Image, r_scale: float, g_scale: float, b_scale: float) -> Image.Image:
+        img = ImageEditorLogic.define_color_scheme(image)
+        data = np.array(img, dtype = np.float32)
+        data[..., 0] *= r_scale
+        data[..., 1] *= g_scale
+        data[..., 2] *= b_scale
+        data = np.clip(data, 0, 255).astype(np.uint8)
+        return Image.fromarray(data)
+
+    @staticmethod
+    def recolor(image: Image.Image, old_rgb: tuple, new_rgb: tuple, tolerance: float = 20.0) -> Image.Image:
+        img = ImageEditorLogic.define_color_scheme(image)
+        data = np.array(img, dtype = np.int32)
+
+        rgb = data[..., :3]
+        target = np.array(old_rgb[:3], dtype = np.int32)
+        distance = np.sum((rgb - target) ** 2, axis = -1)
+        mask = distance <= (tolerance ** 2)
+
+        data[..., :3][mask] = new_rgb[:3]
+        return Image.fromarray(data.astype(np.uint8))
+    
+    @staticmethod
+    def opacity(image: Image.Image, alpha: float) -> Image.Image:
+        img = ImageEditorLogic.define_color_scheme(image)
+        data = np.array(img, dtype=np.float32)
+        
+        data[..., 3] *= alpha
+        
+        data = np.clip(data, 0, 255).astype(np.uint8)
+        return Image.fromarray(data)
+
+    @staticmethod
+    def resize_keep_aspect(image: Image.Image, width: int = None, height: int = None) -> Image.Image:
+        if not width and not height:
+            return image
+
+        orig_width, orig_height = image.width, image.height
+        if width and height:
+            return ImageEditorLogic.resize(image, width, height)
+        if width:
+            height = max(1, int(width * (orig_height / orig_width)))
+        else:
+            width = max(1, int(height * (orig_width / orig_height)))
+        return ImageEditorLogic.resize(image, width, height)
+        
+    @staticmethod
+    def cut_area(image: Image.Image, box: tuple) -> Image.Image:
+        img = ImageEditorLogic.define_color_scheme(image)
+        data = np.array(img)
+        x1, y1, x2, y2 = box
+
+        data[y1:y2, x1:x2] = [0, 0, 0, 0]
+        return Image.fromarray(data)
+
+    @staticmethod
+    def split_image(image: Image.Image, rows: int, cols: int) -> list:
+        width, height = image.size
+        tile_width, tile_height = width // cols, height // rows
+        parts = []
+        
+        for row in range(rows):
+            for col in range(cols):
+                left = col * tile_width
+                top = row * tile_height
+                right = left + tile_width if col < cols - 1 else width
+                bottom = top + tile_height if row < rows - 1 else height
+                
+                parts.append(image.crop((left, top, right, bottom)))
+        return parts
+        
+    @staticmethod
+    def contrast(image: Image.Image, factor: float) -> Image.Image:
+        img = ImageEditorLogic.define_color_scheme(image)
+        data = np.array(img, dtype=np.float32)
+
+        data[..., :3] = (data[..., :3] - 128.0) * factor + 128.0
+        
+        data = np.clip(data, 0, 255).astype(np.uint8)
+        return Image.fromarray(data)
+
+    @staticmethod
+    def apply(image: Image.Image, spec: EditSpec) -> Image.Image:
+        img = image.copy()
+
+        if spec.width and spec.height:
+            if (spec.width, spec.height) != (img.width, img.height):
+                img = ImageEditorLogic.resize(img, spec.width, spec.height)
+        elif spec.width or spec.height:
+            img = ImageEditorLogic.resize_keep_aspect(img, spec.width, spec.height)
+
+        if spec.tolerance > 0:
+            img = ImageEditorLogic.recolor(img, spec.old_color, spec.new_color, spec.tolerance)
+
+        if (spec.r, spec.g, spec.b) != (1.0, 1.0, 1.0):
+            img = ImageEditorLogic.balance(img, spec.r, spec.g, spec.b)
+
+        if spec.contrast != 1.0:
+            img = ImageEditorLogic.contrast(img, spec.contrast)
+
+        if spec.alpha != 1.0:
+            img = ImageEditorLogic.opacity(img, spec.alpha)
+
+        return img
+        
+class ImageIO:
+
+    FORMAT_MAP = {
+        ".png": "PNG",
+        ".jpg": "JPEG",
+        ".jpeg": "JPEG",
+        ".webp": "WEBP",
+        ".bmp": "BMP",
+    }
+
+    @staticmethod
+    def read_image(path):
+        with Image.open(path) as raw:
+            return raw.convert("RGBA")
+
+    @staticmethod
+    def load_image(parent = None):
+        path = filedialog.askopenfilename(parent = parent, filetypes = [("Images", "*.jpg *.jpeg *.png *.webp *.bmp *.tif *.tiff")])
+        if not path:
+            return None, None
+
+        try:
+            img = ImageIO.read_image(path)
+            return img, path
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not load image:\n{e}", parent = parent)
+            return None, None
+
+    @staticmethod
+    def resolve_save_format(path: Path, chosen_type: str = "PNG"):
+        ext = path.suffix.lower()
+        if ext in ImageIO.FORMAT_MAP:
+            return path, ImageIO.FORMAT_MAP[ext]
+
+        format = ImageIO.FORMAT_MAP.get(f".{chosen_type.lower()}", "PNG")
+        new_ext = next(i for i, j in ImageIO.FORMAT_MAP.items() if j == format)
+        
+        if not ext:
+            return path.with_suffix(new_ext), format
+        else:
+            return path.with_name(path.name + new_ext), format
+
+    @staticmethod
+    def write_image(image, path, format):
+        out = image
+        if format in {"JPEG", "BMP"} and out.mode in {"RGBA", "LA", "P"}:
+            out = out.convert("RGB")
+
+        save_options = {}
+        if format in {"JPEG", "WEBP"}:
+            save_options["quality"] = 100
+
+        out.save(path, format = format, **save_options)
+
+    @staticmethod
+    def save_image(image, parent = None):
+        if not image:
+            messagebox.showwarning("Warning", "No image to save.", parent = parent)
+            return
+
+        chosen_type = tk.StringVar(parent)
+
+        file_path = filedialog.asksaveasfilename(parent = parent, title = "Save Image", defaultextension = "", typevariable = chosen_type,
+            filetypes = [("PNG", "*.png"),
+                         ("JPEG", "*.jpg"),
+                         ("WEBP", "*.webp"),
+                         ("BMP", "*.bmp")])
+
+        if not file_path:
+            return
+
+        path, format = ImageIO.resolve_save_format(Path(file_path), chosen_type.get())
+
+        try:
+            ImageIO.write_image(image, path, format)
+            messagebox.showinfo("Saved", f"Successfully saved as {format}!\n\nFile: {path}", parent = parent)
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not save file:\n{e}", parent = parent)
+
+class BatchProcessor:
+
+    @staticmethod
+    def resolve_output(path: Path, out_dir: Path, format_choice: str):
+        if format_choice == "Keep Original":
+            ext = path.suffix.lower()
+            format = ImageIO.FORMAT_MAP.get(ext, "PNG")
+        else:
+            format = format_choice
+            ext = f".{format_choice.lower()}"
+            if ext == ".jpeg":
+                ext = ".jpg"
+
+        return out_dir / f"{path.stem}_batch{ext}", format
+
+    @staticmethod
+    def run(spec: BatchSpec, on_error = None):
+        out_dir = Path(spec.output_dir)
+        count = 0
+        edit_spec = spec.edit_spec if spec.edit_spec is not None else EditSpec()
+
+        for file_path in spec.input_paths:
+            path = Path(file_path)
+            try:
+                img = ImageIO.read_image(path)
+                img = ImageEditorLogic.apply(img, edit_spec)
+
+                out_path, format = BatchProcessor.resolve_output(path, out_dir, spec.format_choice)
+                ImageIO.write_image(img, out_path, format)
+                count += 1
+            except Exception as e:
+                if on_error:
+                    on_error(file_path, e)
+
+        return count        
 </code></pre>
 				</div>
 			</div>
@@ -148,7 +408,630 @@
 				</div>
 				<div class="code-collapse">
 					<pre><code>
-// ЗАПОВНІТЬ: встав сюди код файлу
+import tkinter as tk
+from tkinter import colorchooser, filedialog, messagebox, ttk
+from pathlib import Path
+from PIL import Image, ImageTk
+
+from data import EditSpec, BatchSpec
+from logic import ImageEditorLogic, ImageIO, BatchProcessor
+
+class BatchWindow(tk.Toplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.title("Batch Processing")
+        self.geometry("380x350")
+        self.resizable(False, False)
+        self.transient(parent)
+        self.grab_set()
+
+        self.input_paths = []
+        self.output_dir = ""
+
+        self.setup_ui()
+
+    def setup_ui(self):
+        frame = ttk.Frame(self, padding=15)
+        frame.pack(fill="both", expand=True)
+
+        # 1. Select Files Button
+        ttk.Label(frame, text="1. Select Input Images:", font=("", 10, "bold")).pack(anchor="w", pady=(0, 2))
+        row1 = ttk.Frame(frame)
+        row1.pack(fill="x", pady=(0, 10))
+        ttk.Button(row1, text="Browse Images...", command=self.select_files).pack(side="left")
+        self.lbl_files = ttk.Label(row1, text="No images chosen")
+        self.lbl_files.pack(side="left", padx=8)
+
+        # 2. Select Output Folder Button
+        ttk.Label(frame, text="2. Select Destination Folder:", font=("", 10, "bold")).pack(anchor="w", pady=(0, 2))
+        row2 = ttk.Frame(frame)
+        row2.pack(fill="x", pady=(0, 10))
+        ttk.Button(row2, text="Browse Folder...", command=self.select_folder).pack(side="left")
+        self.lbl_folder = ttk.Label(row2, text="No folder chosen", wraplength=180)
+        self.lbl_folder.pack(side="left", padx=8)
+
+        # 3. Resize Options
+        ttk.Label(frame, text="3. Resize Options (Optional):", font=("", 10, "bold")).pack(anchor="w", pady=(0, 2))
+        dim_frame = ttk.Frame(frame)
+        dim_frame.pack(fill="x", pady=(0, 10))
+        ttk.Label(dim_frame, text="Width:").pack(side="left")
+        self.ent_w = ttk.Entry(dim_frame, width=8)
+        self.ent_w.pack(side="left", padx=(4, 12))
+        ttk.Label(dim_frame, text="Height:").pack(side="left")
+        self.ent_h = ttk.Entry(dim_frame, width=8)
+        self.ent_h.pack(side="left", padx=4)
+
+        # 4. Output Format
+        ttk.Label(frame, text="4. Output Format:", font=("", 10, "bold")).pack(anchor="w", pady=(0, 2))
+        self.format_var = tk.StringVar(value="Keep Original")
+        format_combo = ttk.Combobox(
+            frame, 
+            textvariable=self.format_var, 
+            values=["Keep Original", "PNG", "JPEG", "WEBP", "BMP"], 
+            state="readonly"
+        )
+        format_combo.pack(fill="x", pady=(0, 15))
+
+        # Start Processing Button
+        ttk.Button(frame, text="Start Batch Processing", command=self.run_batch).pack(fill="x")
+
+    def select_files(self):
+        paths = filedialog.askopenfilenames(
+            parent=self,
+            title="Select Images for Batch",
+            filetypes=[("Images", "*.jpg *.jpeg *.png *.webp *.bmp *.tif *.tiff")]
+        )
+        if paths:
+            self.input_paths = list(paths)
+            self.lbl_files.config(text=f"{len(self.input_paths)} image(s)")
+
+    def select_folder(self):
+        folder = filedialog.askdirectory(parent=self, title="Select Output Folder")
+        if folder:
+            self.output_dir = folder
+            self.lbl_folder.config(text=Path(folder).name or folder)
+
+    def run_batch(self):
+        if not self.input_paths:
+            messagebox.showwarning("Warning", "Please select input images first.", parent=self)
+            return
+        if not self.output_dir:
+            messagebox.showwarning("Warning", "Please select an output folder first.", parent=self)
+            return
+
+        w_str = self.ent_w.get().strip()
+        h_str = self.ent_h.get().strip()
+        target_w = int(w_str) if w_str.isdigit() and int(w_str) > 0 else None
+        target_h = int(h_str) if h_str.isdigit() and int(h_str) > 0 else None
+
+        spec = BatchSpec(
+            input_paths=self.input_paths,
+            output_dir=self.output_dir,
+            format_choice=self.format_var.get(),
+            edit_spec=EditSpec(width=target_w, height=target_h),
+        )
+
+        count = BatchProcessor.run(spec, on_error=lambda file_path, e: print(f"Skipped {file_path}: {e}"))
+
+        messagebox.showinfo("Batch Complete", f"Successfully processed {count} image(s).", parent=self.master)
+        self.destroy()
+
+class UI:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Image Editor")
+        self.root.geometry("960x600")
+
+        self.original = None
+        self.edited = None
+        self.preview = None
+        self.aspect_ratio = 1.0
+        self.is_updating = False
+        self.file_path = None
+
+        self.old_color = (255, 255, 255)
+        self.new_color = (255, 0, 0)
+        
+        self.crop_x1 = 0
+        self.crop_y1 = 0
+        self.crop_x2 = 0
+        self.crop_y2 = 0
+        self.drag_mode = None
+        self.last_x = 0
+        self.last_y = 0
+        
+        self.preview_scale = 1.0
+        self.img_x = 0
+        self.img_y = 0
+
+        self.setupUI()
+
+    def setupUI(self):
+        left_panel = ttk.Frame(self.root, padding = 10)
+        left_panel.pack(side = "left", fill = "y")
+
+        # Open / Save Buttons
+        btn_frame = ttk.Frame(left_panel)
+        btn_frame.pack(fill = "x", pady = (0, 10))
+
+        ttk.Button(btn_frame, text = "Open Image...", command = self.load_image).pack(side = "left", fill = "x", expand = True, padx = (0, 4))
+        ttk.Button(btn_frame, text = "Save Image...", command = self.save_image).pack(side = "right", fill = "x", expand = True, padx = (4, 0))
+        ttk.Button(btn_frame, text = "Batch...", command = self.open_batch_window).pack(side = "right", fill = "x", expand = True, padx = (2, 0))
+
+        # Tabbed Control Notebook
+        self.tabs = ttk.Notebook(left_panel)
+        self.tabs.pack(fill = "both", expand = True)
+        self.tabs.bind("<<NotebookTabChanged>>", self.on_tab_change)
+
+        # Resize
+        tab_resize = ttk.Frame(self.tabs, padding = 10)
+        self.tabs.add(tab_resize, text = "Resize")
+
+        self.keep_aspect = tk.BooleanVar(value = True)
+        ttk.Checkbutton(tab_resize, text = "Maintain aspect ratio", variable = self.keep_aspect).pack(anchor = "w", pady = (0, 10))
+
+        ttk.Label(tab_resize, text = "Width (px):").pack(anchor = "w")
+        self.width = tk.StringVar()
+        self.width.trace_add("write", lambda *_: self.on_dimension_change("w"))
+        self.ent_width = ttk.Entry(tab_resize, textvariable = self.width)
+        self.ent_width.pack(fill = "x", pady = (0, 8))
+
+        ttk.Label(tab_resize, text = "Height (px):").pack(anchor="w")
+        self.height = tk.StringVar()
+        self.height.trace_add("write", lambda *_: self.on_dimension_change("h"))
+        self.ent_height = ttk.Entry(tab_resize, textvariable = self.height)
+        self.ent_height.pack(fill = "x")
+
+        # Color Balance/Tolerance/Contrast
+        tab_color = ttk.Frame(self.tabs, padding = 10)
+        self.tabs.add(tab_color, text = "Color")
+        
+        self.overall_scale = self.create_slider(tab_color, "Overall Balance:")
+        self.r_scale = self.create_slider(tab_color, "Red:")
+        self.g_scale = self.create_slider(tab_color, "Green:")
+        self.b_scale = self.create_slider(tab_color, "Blue:")
+        self.contrast_scale = self.create_slider(tab_color, "Contrast:")
+        ttk.Label(tab_color, text = "Opacity:").pack(anchor = "w", pady = (5, 0))
+        self.alpha_scale = ttk.Scale(tab_color, from_ = 0.0, to = 1.0, value = 1.0, command = lambda _: self.apply_edits())
+        self.alpha_scale.pack(fill="x", pady=(0, 10))
+
+        ttk.Button(tab_color, text = "Reset", command = self.reset_colors).pack(pady = 12)
+
+        # Recolor
+        tab_recolor = ttk.Frame(self.tabs, padding = 10)
+        self.tabs.add(tab_recolor, text = "Recolor")
+
+        ## Pick Target Color
+        ttk.Label(tab_recolor, text = "Target Color:").pack(anchor = "w", pady = (5, 2))
+        col_row1 = ttk.Frame(tab_recolor)
+        col_row1.pack(fill = "x", pady = (0, 8))
+
+        self.swatch_old = tk.Label(col_row1, width = 4, bg = "#ffffff", relief = "solid", bd = 1)
+        self.swatch_old.pack(side = "left", padx = (0, 8))
+        ttk.Button(col_row1, text = "Choose...", command = self.pick_target_color).pack(side = "left")
+
+        ## Pick Replacement Color
+        ttk.Label(tab_recolor, text = "Replace With:").pack(anchor = "w", pady = (5, 2))
+        col_row2 = ttk.Frame(tab_recolor)
+        col_row2.pack(fill = "x", pady = (0, 8))
+
+        self.swatch_new = tk.Label(col_row2, width = 4, bg = "#ff0000", relief = "solid", bd = 1)
+        self.swatch_new.pack(side = "left", padx = (0, 8))
+        ttk.Button(col_row2, text = "Choose...", command = self.pick_replace_color).pack(side = "left")
+
+        # Tolerance Slider
+        ttk.Label(tab_recolor, text = "Tolerance:").pack(anchor = "w", pady = (5, 0))
+        self.tolerance_scale = ttk.Scale(tab_recolor, from_ = 0, to = 120, value = 0, command = lambda _: self.apply_edits())
+        self.tolerance_scale.pack(fill="x", pady=(0, 10))
+
+        ttk.Button(tab_recolor, text = "Reset Recolor", command = self.reset_recolor).pack(pady=6)
+
+        # Crop
+        tab_crop = ttk.Frame(self.tabs, padding = 10)
+        self.tabs.add(tab_crop, text = "Crop")
+        
+        ttk.Label(tab_crop, text="Adjust the crop box on the image,\nthen choose an action:", font=("", 9, "italic")).pack(pady=(0, 10))
+        
+        ttk.Button(tab_crop, text="Crop (Keep inside box)", command=self.action_crop).pack(fill="x", pady=2)
+        ttk.Button(tab_crop, text="Cut (Remove inside box)", command=self.action_cut).pack(fill="x", pady=(2, 15))
+        ttk.Button(tab_crop, text="Reset Box Position", command=self.init_crop_box).pack(fill="x", pady=(0, 15))
+
+        # Split
+        tab_split = ttk.Frame(self.tabs, padding = 10)
+        self.tabs.add(tab_split, text = "Split")
+        
+        ttk.Label(tab_split, text="Split entire image into a grid:", font=("", 9, "bold")).pack(anchor="w", pady=(0, 10))
+        
+        split_frame = ttk.Frame(tab_split)
+        split_frame.pack(fill="x", pady=5)
+        
+        ttk.Label(split_frame, text="Rows:").pack(side="left")
+        self.split_rows_var = tk.StringVar(value="2")
+        self.split_rows_var.trace_add("write", lambda *_: self.draw_split_grid())
+        self.split_rows = ttk.Entry(split_frame, width=5, textvariable=self.split_rows_var)
+        self.split_rows.pack(side="left", padx=(2, 10))
+        
+        ttk.Label(split_frame, text="Cols:").pack(side="left")
+        self.split_cols_var = tk.StringVar(value="2")
+        self.split_cols_var.trace_add("write", lambda *_: self.draw_split_grid())
+        self.split_cols = ttk.Entry(split_frame, width=5, textvariable=self.split_cols_var)
+        self.split_cols.pack(side="left", padx=2)
+        
+        ttk.Button(tab_split, text="Split & Save Parts...", command=self.action_split).pack(fill="x", pady=15)
+
+        # Right Panel
+        self.canvas = tk.Canvas(self.root, bg = "#e5e5e5")
+        self.canvas.pack(side = "right", fill = "both", expand = True, padx = 10, pady = 10)
+        self.canvas.bind("<Configure>", lambda e: self.update_preview())
+        
+        self.canvas.bind("<ButtonPress-1>", self.on_mouse_down)
+        self.canvas.bind("<B1-Motion>", self.on_mouse_drag)
+        self.canvas.bind("<Motion>", self.on_mouse_hover)
+
+    def open_batch_window(self):
+        BatchWindow(self.root)
+
+    def create_slider(self, parent, label_text):
+        ttk.Label(parent, text = label_text).pack(anchor = "w", pady = (5, 0))
+        slider = ttk.Scale(parent, from_=0.0, to=2.0, value=1.0, command=lambda _: self.apply_edits())
+        slider.pack(fill = "x")
+        return slider
+
+    def pick_target_color(self):
+        color = colorchooser.askcolor(title = "Select Color to Replace")[0]
+        if color:
+            self.old_color = tuple(map(int, color))
+            hex = f"#{self.old_color[0]:02x}{self.old_color[1]:02x}{self.old_color[2]:02x}"
+            self.swatch_old.configure(bg = hex)
+            self.apply_edits()
+
+    def pick_replace_color(self):
+        color = colorchooser.askcolor(title="Select Replacement Color")[0]
+        if color:
+            self.new_color = tuple(map(int, color))
+            hex = f"#{self.new_color[0]:02x}{self.new_color[1]:02x}{self.new_color[2]:02x}"
+            self.swatch_new.configure(bg = hex)
+            self.apply_edits()
+
+    def reset_colors(self):
+        self.overall_scale.set(1.0)
+        self.r_scale.set(1.0)
+        self.g_scale.set(1.0)
+        self.b_scale.set(1.0)
+        self.contrast_scale.set(1.0)
+        self.alpha_scale.set(1.0)
+        self.apply_edits()
+
+    def reset_recolor(self):
+        self.tolerance_scale.set(0)
+        self.apply_edits()
+
+    def on_dimension_change(self, changed_side):
+        if self.is_updating or not self.original:
+            return
+
+        try:
+            self.is_updating = True
+            if changed_side == "w" and self.keep_aspect.get():
+                val = self.width.get().strip()
+                if val.isdigit() and int(val) > 0:
+                    new_height = max(1, int(int(val) / self.aspect_ratio))
+                    self.height.set(str(new_height))
+            elif changed_side == "h" and self.keep_aspect.get():
+                val = self.height.get().strip()
+                if val.isdigit() and int(val) > 0:
+                    new_width = max(1, int(int(val) * self.aspect_ratio))
+                    self.width.set(str(new_width))
+            self.is_updating = False
+            self.apply_edits()
+        except Exception:
+            self.is_updating = False
+
+    def apply_edits(self):
+        if self.original is None:
+            return
+
+        overall = self.overall_scale.get()
+        spec = EditSpec(
+            r = self.r_scale.get() * overall,
+            g = self.g_scale.get() * overall,
+            b = self.b_scale.get() * overall,
+            contrast = self.contrast_scale.get(),
+            alpha = self.alpha_scale.get(),
+            old_color = self.old_color,
+            new_color = self.new_color,
+            tolerance = self.tolerance_scale.get(),
+        )
+
+        try:
+            width = int(self.width.get())
+            height = int(self.height.get())
+            if width > 0 and height > 0:
+                spec.width = width
+                spec.height = height
+        except (ValueError, TypeError):
+            pass
+
+        self.edited = ImageEditorLogic.apply(self.original, spec)
+        self.update_preview()
+
+    def update_preview(self):
+        if not self.edited:
+            return
+
+        canvas_width, canvas_height = self.canvas.winfo_width(), self.canvas.winfo_height()
+        if canvas_width < 20 or canvas_height < 20: return
+        
+        current_tab = self.tabs.tab(self.tabs.select(), "text")
+        
+        rel_box = None
+        if current_tab == "Crop" and hasattr(self, 'crop_x1') and self.preview:
+            preview_width, preview_height = self.preview.width(), self.preview.height()
+            rel_box = [
+                (self.crop_x1 - self.img_x)/preview_width, (self.crop_y1 - self.img_y)/preview_height,
+                (self.crop_x2 - self.img_x)/preview_width, (self.crop_y2 - self.img_y)/preview_height
+            ]
+
+        preview = self.edited.copy()
+        old_width = preview.width
+        preview.thumbnail((canvas_width - 16, canvas_height - 16), Image.Resampling.LANCZOS)
+        
+        self.preview_scale = preview.width / old_width
+        self.img_x = (canvas_width - preview.width) // 2
+        self.img_y = (canvas_height - preview.height) // 2
+
+        self.preview = ImageTk.PhotoImage(preview)
+        self.canvas.delete("image") 
+        self.canvas.create_image(self.img_x, self.img_y, image=self.preview, anchor="nw", tags="image")
+        self.canvas.tag_lower("image") 
+
+        if current_tab == "Crop":
+            if rel_box:
+                preview_width, preview_height = self.preview.width(), self.preview.height()
+                self.crop_x1, self.crop_y1 = self.img_x + rel_box[0]*preview_width, self.img_y + rel_box[1]*preview_height
+                self.crop_x2, self.crop_y2 = self.img_x + rel_box[2]*preview_width, self.img_y + rel_box[3]*preview_height
+                self.draw_crop_box()
+            else:
+                self.init_crop_box()
+        elif current_tab == "Split":
+            self.draw_split_grid()
+
+    def on_tab_change(self, event):
+        current_tab = self.tabs.tab(self.tabs.select(), "text")
+        
+        self.canvas.delete("crop_element")
+        self.canvas.delete("split_grid")
+        self.canvas.config(cursor="")
+
+        if current_tab == "Crop":
+            self.init_crop_box()
+        elif current_tab == "Split":
+            self.draw_split_grid()
+        
+    def action_split(self):
+        if not self.original:
+            return
+        try:
+            rows, cols = int(self.split_rows.get()), int(self.split_cols.get())
+            if rows < 1 or cols < 1: raise ValueError
+        except ValueError:
+            messagebox.showerror("Error", "Rows and Columns must be integers > 0.", parent=self.root)
+            return
+            
+        folder = filedialog.askdirectory(parent=self.root, title="Select Folder to Save Split Parts")
+        if not folder: return
+
+        parts = ImageEditorLogic.split_image(self.edited, rows, cols)
+        
+        base_name = Path(self.file_path).stem if hasattr(self, 'file_path') and self.file_path else "image"
+        
+        for i, part in enumerate(parts):
+            path = Path(folder) / f"{base_name}_part_{i+1}.png"
+            ImageIO.write_image(part, path, "PNG")
+            
+        messagebox.showinfo("Success", f"Successfully saved {len(parts)} parts!", parent=self.root)
+        
+    def draw_split_grid(self):
+        self.canvas.delete("split_grid")
+        if self.tabs.tab(self.tabs.select(), "text") != "Split":
+            return
+        if not hasattr(self, 'preview') or not self.preview:
+            return
+
+        try:
+            rows = int(self.split_rows_var.get())
+            cols = int(self.split_cols_var.get())
+            if rows < 1 or cols < 1: return
+        except ValueError:
+            return
+
+        preview_width = self.preview.width()
+        preview_height = self.preview.height()
+        
+        for col in range(1, cols):
+            x = self.img_x + col * (preview_width / cols)
+            self.canvas.create_line(x, self.img_y, x, self.img_y + preview_height, fill="red", dash=(4, 4), tags="split_grid", width=2)
+        
+        for row in range(1, rows):
+            y = self.img_y + row * (preview_height / rows)
+            self.canvas.create_line(self.img_x, y, self.img_x + preview_width, y, fill="red", dash=(4, 4), tags="split_grid", width=2)
+        
+    def get_selected_box(self):
+        x1 = int(((self.crop_x1 - self.img_x) / self.preview_scale) * (self.original.width / self.edited.width))
+        y1 = int(((self.crop_y1 - self.img_y) / self.preview_scale) * (self.original.height / self.edited.height))
+        x2 = int(((self.crop_x2 - self.img_x) / self.preview_scale) * (self.original.width / self.edited.width))
+        y2 = int(   ((self.crop_y2 - self.img_y) / self.preview_scale) * (self.original.height / self.edited.height))
+        
+        return (max(0, x1), max(0, y1), min(self.original.width, x2), min(self.original.height, y2))
+
+    def action_crop(self):
+        if not self.original:
+            return 
+        box = self.get_selected_box()
+        self.original = self.original.crop(box)
+        
+        self.is_updating = True
+        self.aspect_ratio = self.original.width / self.original.height
+        self.width.set(str(self.original.width))
+        self.height.set(str(self.original.height))
+        self.is_updating = False
+        
+        self.apply_edits()
+        self.init_crop_box()
+
+    def action_cut(self):
+        if not self.original:
+            return 
+        box = self.get_selected_box()
+        self.original = ImageEditorLogic.cut_area(self.original, box)
+        
+        self.apply_edits()
+        
+    def init_crop_box(self):
+        if not hasattr(self, 'preview') or not self.preview:
+            return
+        preview_width, preview_height = self.preview.width(), self.preview.height()
+        
+        center_x, center_y = self.img_x + preview_width/2, self.img_y + preview_height/2
+        box_w, box_h = preview_width * 0.8, preview_height * 0.8
+        
+        self.crop_x1 = center_x - box_w/2
+        self.crop_y1 = center_y - box_h/2
+        self.crop_x2 = center_x + box_w/2
+        self.crop_y2 = center_y + box_h/2
+        
+        self.draw_crop_box()
+
+    def draw_crop_box(self):
+        self.canvas.delete("crop_element")
+        if not hasattr(self, 'crop_x1'):
+            return
+        
+        self.canvas.create_rectangle(
+            self.crop_x1, self.crop_y1, self.crop_x2, self.crop_y2, 
+            outline="#00aaff", width=2, dash=(5, 5), tags="crop_element"
+        )
+        
+        h = 4
+        points = {
+            "nw": (self.crop_x1, self.crop_y1), "ne": (self.crop_x2, self.crop_y1),
+            "sw": (self.crop_x1, self.crop_y2), "se": (self.crop_x2, self.crop_y2),
+            "n": ((self.crop_x1+self.crop_x2)/2, self.crop_y1),
+            "s": ((self.crop_x1+self.crop_x2)/2, self.crop_y2),
+            "w": (self.crop_x1, (self.crop_y1+self.crop_y2)/2),
+            "e": (self.crop_x2, (self.crop_y1+self.crop_y2)/2)
+        }
+        
+        for name, (x, y) in points.items():
+            self.canvas.create_rectangle(
+                x-h, y-h, x+h, y+h, fill="white", outline="#00aaff", 
+                tags=("crop_element", f"handle_{name}")
+            )
+
+    def on_mouse_down(self, event):
+        self.drag_mode = None 
+        if self.tabs.tab(self.tabs.select(), "text") != "Crop":
+            return 
+        
+        items = self.canvas.find_withtag("current")
+        self.last_x, self.last_y = event.x, event.y
+        
+        if items:
+            tags = self.canvas.gettags(items[0])
+            for tag in tags:
+                if tag.startswith("handle_"):
+                    self.drag_mode = tag.split("_")[1]
+                    return
+                    
+        if self.crop_x1 < event.x < self.crop_x2 and self.crop_y1 < event.y < self.crop_y2:
+            self.drag_mode = "move"
+
+    def on_mouse_drag(self, event):
+        if self.tabs.tab(self.tabs.select(), "text") != "Crop":
+            return 
+        if not self.drag_mode:
+            return
+        
+        dx = event.x - self.last_x
+        dy = event.y - self.last_y
+        self.last_x, self.last_y = event.x, event.y
+        
+        max_x = self.img_x + self.preview.width()
+        max_y = self.img_y + self.preview.height()
+        min_w, min_h = 30, 30
+        
+        if self.drag_mode == "move":
+            if self.crop_x1 + dx < self.img_x:
+                dx = self.img_x - self.crop_x1
+            if self.crop_x2 + dx > max_x:
+                dx = max_x - self.crop_x2
+            if self.crop_y1 + dy < self.img_y:
+                dy = self.img_y - self.crop_y1
+            if self.crop_y2 + dy > max_y:
+                dy = max_y - self.crop_y2
+            
+            self.crop_x1 += dx; self.crop_x2 += dx
+            self.crop_y1 += dy; self.crop_y2 += dy
+        else:
+            if "n" in self.drag_mode:
+                self.crop_y1 = min(self.crop_y2 - min_h, max(self.img_y, self.crop_y1 + dy))
+            if "s" in self.drag_mode:
+                self.crop_y2 = max(self.crop_y1 + min_h, min(max_y, self.crop_y2 + dy))
+            if "w" in self.drag_mode:
+                self.crop_x1 = min(self.crop_x2 - min_w, max(self.img_x, self.crop_x1 + dx))
+            if "e" in self.drag_mode:
+                self.crop_x2 = max(self.crop_x1 + min_w, min(max_x, self.crop_x2 + dx))
+            
+        self.draw_crop_box()
+
+    def on_mouse_hover(self, event):
+        if self.tabs.tab(self.tabs.select(), "text") != "Crop": 
+            self.canvas.config(cursor="")
+            return
+            
+        items = self.canvas.find_withtag("current")
+        cursor = ""
+        if items:
+            tags = self.canvas.gettags(items[0])
+            for tag in tags:
+                if tag.startswith("handle_"):
+                    cursor = "crosshair"
+                    break
+            else:
+                if self.crop_x1 < event.x < self.crop_x2 and self.crop_y1 < event.y < self.crop_y2:
+                    cursor = "fleur"
+        self.canvas.config(cursor=cursor)
+
+    def reset_edits(self):
+        self.overall_scale.set(1.0)
+        self.r_scale.set(1.0)
+        self.g_scale.set(1.0)
+        self.b_scale.set(1.0)
+        self.contrast_scale.set(1.0)
+        self.alpha_scale.set(1.0)
+        self.tolerance_scale.set(0)
+
+        self.is_updating = True
+        self.width.set(str(self.original.width))
+        self.height.set(str(self.original.height))
+        self.is_updating = False
+
+        self.canvas.delete("all")
+        self.apply_edits()
+
+    def load_image(self):
+        img, path = ImageIO.load_image(parent = self.root)
+        if not img:
+            return
+
+        self.original = img
+        self.file_path = path
+        self.aspect_ratio = self.original.width / self.original.height
+
+        self.reset_edits()
+
+    def save_image(self):
+        ImageIO.save_image(self.edited, parent = self.root)
 </code></pre>
 				</div>
 			</div>
@@ -158,7 +1041,13 @@
 				</div>
 				<div class="code-collapse">
 					<pre><code>
-// ЗАПОВНІТЬ: встав сюди код файлу
+import tkinter as tk
+from ui import UI
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = UI(root)
+    root.mainloop()
 </code></pre>
 				</div>
 			</div>
