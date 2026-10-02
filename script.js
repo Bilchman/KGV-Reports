@@ -11,7 +11,7 @@ const REPORTS = [
 const SECTIONS = [
     ["meta", "Мета"],
     ["condition", "Умова"],
-    ["analysis", "Аналіз"],
+    ["analysis", "Хід роботи"],
     ["code", "Код"],
     ["examples", "Приклади"],
     ["tests", "Перевірки"],
