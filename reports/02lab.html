@@ -115,7 +115,7 @@
             <br/>
             <li>Завдання 3: Збільшення контрастності<br/><br/>
             Коригування контрастності реалізовано у методі ImageEditorLogic.contrast на основі перерахунку відносно середнього значення яскравості.
-Для розрахунків береться математична середина сірого кольору в 8-бітному просторі — число 128. В алгоритмі від значення кожного пікселя віднімається 128, це центрує всі значення навколо нуля, а діапазон стає від -128 до +127. Потім отримане значення множиться на коефіцієнт контрасту. Якщо factor > 1.0, додатні числа, тобто світлі тони, стають ще більшими, а від'ємні, тобто темні тони, стають ще меншими. Нарешті до результату знову додається 128.0, повертаючи значення у стандартний колірний простір.</li>
+Для розрахунків береться математична середина сірого кольору в 8-бітному просторі — число 128. В алгоритмі від значення кожного пікселя віднімається 128, це центрує всі значення навколо нуля, а діапазон стає від -128 до +127. Потім отримане значення множиться на коефіцієнт контрасту. Якщо factor > 1.0, додатні числа, тобто світлі тони, стають ще більшими, а від'ємні, тобто темні тони, стають ще меншими. Нарешті до результату знову додається 128, повертаючи значення у стандартний колірний простір.</li>
             <br/>
           </ul>
         </article>
@@ -168,19 +168,19 @@ from data import EditSpec, BatchSpec
 
 class ImageEditorLogic:
     @staticmethod
-    def resize(image: Image.Image, width: int, height: int) -> Image.Image:
+    def resize(image: Image.Image, width: int, height: int) -&gt; Image.Image:
         width = max(1, int(width))
         height = max(1, int(height))
         return image.resize((width, height), Image.Resampling.LANCZOS)
 
     @staticmethod
-    def define_color_scheme(image: Image.Image) -> Image.Image:
+    def define_color_scheme(image: Image.Image) -&gt; Image.Image:
         if image.mode in ("RGB", "RGBA"):
             return image
         return image.convert("RGBA")
 
     @staticmethod
-    def balance(image: Image.Image, r_scale: float, g_scale: float, b_scale: float) -> Image.Image:
+    def balance(image: Image.Image, r_scale: float, g_scale: float, b_scale: float) -&gt; Image.Image:
         img = ImageEditorLogic.define_color_scheme(image)
         data = np.array(img, dtype = np.float32)
         data[..., 0] *= r_scale
@@ -190,20 +190,20 @@ class ImageEditorLogic:
         return Image.fromarray(data)
 
     @staticmethod
-    def recolor(image: Image.Image, old_rgb: tuple, new_rgb: tuple, tolerance: float = 20.0) -> Image.Image:
+    def recolor(image: Image.Image, old_rgb: tuple, new_rgb: tuple, tolerance: float = 20.0) -&gt; Image.Image:
         img = ImageEditorLogic.define_color_scheme(image)
         data = np.array(img, dtype = np.int32)
 
         rgb = data[..., :3]
         target = np.array(old_rgb[:3], dtype = np.int32)
         distance = np.sum((rgb - target) ** 2, axis = -1)
-        mask = distance <= (tolerance ** 2)
+        mask = distance &lt;= (tolerance ** 2)
 
         data[..., :3][mask] = new_rgb[:3]
         return Image.fromarray(data.astype(np.uint8))
     
     @staticmethod
-    def opacity(image: Image.Image, alpha: float) -> Image.Image:
+    def opacity(image: Image.Image, alpha: float) -&gt; Image.Image:
         img = ImageEditorLogic.define_color_scheme(image)
         data = np.array(img, dtype=np.float32)
         
@@ -213,7 +213,7 @@ class ImageEditorLogic:
         return Image.fromarray(data)
 
     @staticmethod
-    def resize_keep_aspect(image: Image.Image, width: int = None, height: int = None) -> Image.Image:
+    def resize_keep_aspect(image: Image.Image, width: int = None, height: int = None) -&gt; Image.Image:
         if not width and not height:
             return image
 
@@ -227,7 +227,7 @@ class ImageEditorLogic:
         return ImageEditorLogic.resize(image, width, height)
         
     @staticmethod
-    def cut_area(image: Image.Image, box: tuple) -> Image.Image:
+    def cut_area(image: Image.Image, box: tuple) -&gt; Image.Image:
         img = ImageEditorLogic.define_color_scheme(image)
         data = np.array(img)
         x1, y1, x2, y2 = box
@@ -236,7 +236,7 @@ class ImageEditorLogic:
         return Image.fromarray(data)
 
     @staticmethod
-    def split_image(image: Image.Image, rows: int, cols: int) -> list:
+    def split_image(image: Image.Image, rows: int, cols: int) -&gt; list:
         width, height = image.size
         tile_width, tile_height = width // cols, height // rows
         parts = []
@@ -245,14 +245,14 @@ class ImageEditorLogic:
             for col in range(cols):
                 left = col * tile_width
                 top = row * tile_height
-                right = left + tile_width if col < cols - 1 else width
-                bottom = top + tile_height if row < rows - 1 else height
+                right = left + tile_width if col &lt; cols - 1 else width
+                bottom = top + tile_height if row &lt; rows - 1 else height
                 
                 parts.append(image.crop((left, top, right, bottom)))
         return parts
         
     @staticmethod
-    def contrast(image: Image.Image, factor: float) -> Image.Image:
+    def contrast(image: Image.Image, factor: float) -&gt; Image.Image:
         img = ImageEditorLogic.define_color_scheme(image)
         data = np.array(img, dtype=np.float32)
 
@@ -262,7 +262,7 @@ class ImageEditorLogic:
         return Image.fromarray(data)
 
     @staticmethod
-    def apply(image: Image.Image, spec: EditSpec) -> Image.Image:
+    def apply(image: Image.Image, spec: EditSpec) -&gt; Image.Image:
         img = image.copy()
 
         if spec.width and spec.height:
@@ -271,7 +271,7 @@ class ImageEditorLogic:
         elif spec.width or spec.height:
             img = ImageEditorLogic.resize_keep_aspect(img, spec.width, spec.height)
 
-        if spec.tolerance > 0:
+        if spec.tolerance &gt; 0:
             img = ImageEditorLogic.recolor(img, spec.old_color, spec.new_color, spec.tolerance)
 
         if (spec.r, spec.g, spec.b) != (1.0, 1.0, 1.0):
@@ -501,8 +501,8 @@ class BatchWindow(tk.Toplevel):
 
         w_str = self.ent_w.get().strip()
         h_str = self.ent_h.get().strip()
-        target_w = int(w_str) if w_str.isdigit() and int(w_str) > 0 else None
-        target_h = int(h_str) if h_str.isdigit() and int(h_str) > 0 else None
+        target_w = int(w_str) if w_str.isdigit() and int(w_str) &gt; 0 else None
+        target_h = int(h_str) if h_str.isdigit() and int(h_str) &gt; 0 else None
 
         spec = BatchSpec(
             input_paths=self.input_paths,
@@ -561,7 +561,7 @@ class UI:
         # Tabbed Control Notebook
         self.tabs = ttk.Notebook(left_panel)
         self.tabs.pack(fill = "both", expand = True)
-        self.tabs.bind("<<NotebookTabChanged>>", self.on_tab_change)
+        self.tabs.bind("&lt;&lt;NotebookTabChanged&gt;&gt;", self.on_tab_change)
 
         # Resize
         tab_resize = ttk.Frame(self.tabs, padding = 10)
@@ -662,11 +662,11 @@ class UI:
         # Right Panel
         self.canvas = tk.Canvas(self.root, bg = "#e5e5e5")
         self.canvas.pack(side = "right", fill = "both", expand = True, padx = 10, pady = 10)
-        self.canvas.bind("<Configure>", lambda e: self.update_preview())
+        self.canvas.bind("&lt;Configure&gt;", lambda e: self.update_preview())
         
-        self.canvas.bind("<ButtonPress-1>", self.on_mouse_down)
-        self.canvas.bind("<B1-Motion>", self.on_mouse_drag)
-        self.canvas.bind("<Motion>", self.on_mouse_hover)
+        self.canvas.bind("&lt;ButtonPress-1&gt;", self.on_mouse_down)
+        self.canvas.bind("&lt;B1-Motion&gt;", self.on_mouse_drag)
+        self.canvas.bind("&lt;Motion&gt;", self.on_mouse_hover)
 
     def open_batch_window(self):
         BatchWindow(self.root)
@@ -714,12 +714,12 @@ class UI:
             self.is_updating = True
             if changed_side == "w" and self.keep_aspect.get():
                 val = self.width.get().strip()
-                if val.isdigit() and int(val) > 0:
+                if val.isdigit() and int(val) &gt; 0:
                     new_height = max(1, int(int(val) / self.aspect_ratio))
                     self.height.set(str(new_height))
             elif changed_side == "h" and self.keep_aspect.get():
                 val = self.height.get().strip()
-                if val.isdigit() and int(val) > 0:
+                if val.isdigit() and int(val) &gt; 0:
                     new_width = max(1, int(int(val) * self.aspect_ratio))
                     self.width.set(str(new_width))
             self.is_updating = False
@@ -746,7 +746,7 @@ class UI:
         try:
             width = int(self.width.get())
             height = int(self.height.get())
-            if width > 0 and height > 0:
+            if width &gt; 0 and height &gt; 0:
                 spec.width = width
                 spec.height = height
         except (ValueError, TypeError):
@@ -760,7 +760,7 @@ class UI:
             return
 
         canvas_width, canvas_height = self.canvas.winfo_width(), self.canvas.winfo_height()
-        if canvas_width < 20 or canvas_height < 20: return
+        if canvas_width &lt; 20 or canvas_height &lt; 20: return
         
         current_tab = self.tabs.tab(self.tabs.select(), "text")
         
@@ -813,9 +813,9 @@ class UI:
             return
         try:
             rows, cols = int(self.split_rows.get()), int(self.split_cols.get())
-            if rows < 1 or cols < 1: raise ValueError
+            if rows &lt; 1 or cols &lt; 1: raise ValueError
         except ValueError:
-            messagebox.showerror("Error", "Rows and Columns must be integers > 0.", parent=self.root)
+            messagebox.showerror("Error", "Rows and Columns must be integers &gt; 0.", parent=self.root)
             return
             
         folder = filedialog.askdirectory(parent=self.root, title="Select Folder to Save Split Parts")
@@ -841,7 +841,7 @@ class UI:
         try:
             rows = int(self.split_rows_var.get())
             cols = int(self.split_cols_var.get())
-            if rows < 1 or cols < 1: return
+            if rows &lt; 1 or cols &lt; 1: return
         except ValueError:
             return
 
@@ -943,7 +943,7 @@ class UI:
                     self.drag_mode = tag.split("_")[1]
                     return
                     
-        if self.crop_x1 < event.x < self.crop_x2 and self.crop_y1 < event.y < self.crop_y2:
+        if self.crop_x1 &lt; event.x &lt; self.crop_x2 and self.crop_y1 &lt; event.y &lt; self.crop_y2:
             self.drag_mode = "move"
 
     def on_mouse_drag(self, event):
@@ -961,13 +961,13 @@ class UI:
         min_w, min_h = 30, 30
         
         if self.drag_mode == "move":
-            if self.crop_x1 + dx < self.img_x:
+            if self.crop_x1 + dx &lt; self.img_x:
                 dx = self.img_x - self.crop_x1
-            if self.crop_x2 + dx > max_x:
+            if self.crop_x2 + dx &gt; max_x:
                 dx = max_x - self.crop_x2
-            if self.crop_y1 + dy < self.img_y:
+            if self.crop_y1 + dy &lt; self.img_y:
                 dy = self.img_y - self.crop_y1
-            if self.crop_y2 + dy > max_y:
+            if self.crop_y2 + dy &gt; max_y:
                 dy = max_y - self.crop_y2
             
             self.crop_x1 += dx; self.crop_x2 += dx
@@ -998,7 +998,7 @@ class UI:
                     cursor = "crosshair"
                     break
             else:
-                if self.crop_x1 < event.x < self.crop_x2 and self.crop_y1 < event.y < self.crop_y2:
+                if self.crop_x1 &lt; event.x &lt; self.crop_x2 and self.crop_y1 &lt; event.y &lt; self.crop_y2:
                     cursor = "fleur"
         self.canvas.config(cursor=cursor)
 
