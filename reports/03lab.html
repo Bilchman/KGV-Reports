@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- ЗАПОВНІТЬ: цей рядок визначає назву у списку на головній -->
     <meta name="report-title" content="Лабораторна робота №1">
 
     <title>ЛР №3 — Більчук Нікіта ІПЗ-14</title>
@@ -64,30 +63,29 @@
             <p>Для реалізації програми було продовжено розширення можливостей бібліотек Pillow та Tkinter, а також застосовано нові архітектурні підходи для побудови складних пайплайнів обробки.</p>
             <ul>
                 <li>Pillow використано для накладання зображень одне на одне за допомогою методу paste(), а також для коректного злиття напівпрозорих шарів через алгоритм Image.alpha_composite(). Крім того, залучено модулі ImageDraw та ImageFont для рендерингу тексту.</li>
-                <li>Tkinter розширено використанням методу циклічного виклику after() для реалізації неблокуючого таймера слайд-шоу, а також застосовано метод trace_add() для змінних типу StringVar, що дозволило реалізувати миттєвий (live) попередній перегляд змін без необхідності натискати додаткові кнопки.</li>
-                <li>Архітектура програми була рефакторизована та розділена на незалежні модулі (models, logic, ui) для забезпечення слабкої зв'язності коду (loose coupling) та полегшення подальшої підтримки.</li>
+                <li>Tkinter розширено використанням методу циклічного виклику after() для реалізації слайд-шоу</li>
             </ul>
             <br/><br/>
             <p>Продовжуємо роботу з класами:</p>
             <ol>
-                <li>EditSpec — клас конфігурації розширено новими полями для зберігання параметрів тексту водяного знаку (шрифт, координати, колір, прозорість) та даних для об'єднання зображень.</li>
+                <li>EditSpec — клас конфігурації розширено новими полями для зберігання параметрів тексту водяного знаку та даних для об'єднання зображень.</li>
                 <li>ImageEditorLogic — обчислювальний клас доповнено методами combine() для розрахунку нових габаритів полотна та watermark() для генерації текстових накладень з альфа-каналом.</li>
-                <li>UI — головний інтерфейс розширено двома новими вкладками («Combine» та «Watermark»). Додано систему захисту від некоректного введення користувача (наприклад, введення тексту замість цифр у поля координат чи розміру).</li>
-                <li>SlideshowWindow — новий клас, успадкований від tk.Toplevel. Відповідає за завантаження масиву зображень, їх масштабування під розмір екрану та автоматичну циклічну зміну кадрів за допомогою вбудованого таймера подій.</li>
+                <li>UI — головний інтерфейс розширено двома новими вкладками «Combine» та «Watermark».</li>
+                <li>SlideshowWindow — новий клас, відповідає за завантаження масиву зображень, їх масштабування під розмір екрану та автоматичну циклічну зміну кадрів за допомогою вбудованого таймера подій.</li>
             </ol>
             <br/><br/>
             <ul>
                 <li>Завдання 1: Об'єднання зображень<br/><br/>
-                    Для об'єднання двох зображень створено метод ImageEditorLogic.combine. Логіка алгоритму полягає у створенні нового, більшого полотна та розміщенні на ньому обох зображень. Оскільки зображення можуть мати різні розміри, програма спочатку приводить їх до спільного знаменника: якщо обрано об'єднання по горизонталі (left/right), додаткове зображення масштабується пропорційно до висоти основного зображення; якщо по вертикалі (top/bottom) — до ширини.
-                    Після розрахунку нових габаритів (наприклад, сума ширин та максимальна висота), створюється повністю прозоре базове полотно за допомогою Image.new("RGBA", (new_width, new_height), (0, 0, 0, 0)). Далі, залежно від обраного напрямку, метод paste() вставляє оригінальне та додаткове зображення за розрахованими додатними координатами, запобігаючи обрізанню країв. В інтерфейсі реалізовано попередній перегляд: користувач бачить результат об'єднання ще до остаточного застосування (Apply).</li>
+                    Для об'єднання двох зображень створено метод ImageEditorLogic.combine. Логіка алгоритму полягає у створенні нового, більшого полотна та розміщенні на ньому обох зображень. Оскільки зображення можуть мати різні розміри, програма спочатку приводить їх до спільного знаменника: якщо обрано об'єднання по горизонталі, додаткове зображення масштабується пропорційно до висоти основного зображення, якщо ж по вертикалі, то до ширини.
+                    Після розрахунку нових габаритів, створюється повністю прозоре базове полотно за допомогою Image.new("RGBA", (new_width, new_height), (0, 0, 0, 0)). Далі, залежно від обраного напрямку, метод paste() вставляє оригінальне та додаткове зображення за розрахованими додатними координатами, запобігаючи обрізанню країв. В інтерфейсі реалізовано попередній перегляд і користувач бачить результат об'єднання ще до остаточного застосування Apply.</li>
                 <br/>
                 <li>Завдання 2: Створення водяного знаку на зображенні<br/><br/>
                     Реалізація текстового водяного знаку вимагала створення окремого прозорого шару. Метод watermark() не малює текст безпосередньо на оригінальному зображенні, оскільки це унеможливлює коректне застосування прозорості до самого тексту.
-                    Замість цього створюється порожній шар (overlay) розміром з оригінальне зображення. Користувацький коефіцієнт прозорості (alpha від 0.0 до 1.0) математично переводиться у 8-бітний формат (0-255) та додається як четвертий параметр до RGB-кольору тексту. За допомогою ImageDraw.Draw(overlay) та завантаженого шрифту ImageFont текст відмальовується на прозорому шарі. Остаточне об'єднання зображення та водяного знаку відбувається через метод Image.alpha_composite(), який попіксельно змішує кольори з урахуванням альфа-каналу, забезпечуючи плавне накладання без артефактів на краях літер. В інтерфейсі впроваджено захист: якщо розмір тексту дорівнює нулю або рядок порожній, рендеринг тексту ігнорується, що запобігає падінню програми.</li>
+                    Замість цього створюється порожній шар розміром з оригінальне зображення. За допомогою ImageDraw.Draw(overlay) та завантаженого шрифту ImageFont текст відмальовується на прозорому шарі. Остаточне об'єднання зображення та водяного знаку відбувається через метод Image.alpha_composite(), який попіксельно змішує кольори з урахуванням альфа-каналу, забезпечуючи плавне накладання без артефактів на краях літер. Також впроваджено захист якщо розмір тексту дорівнює нулю або рядок порожній, рендеринг тексту ігнорується.</li>
                 <br/>
                 <li>Завдання 3: Створення слайд-шоу<br/><br/>
-                    Програвач слайд-шоу винесено в окреме вікно, кероване класом SlideshowWindow. Замість використання функції time.sleep(), яка б повністю заблокувала головний потік виконання (GUI thread) і призвела до зависання програми, для створення затримки використано метод Tkinter — self.after(delay, callback). Це дозволяє програмі залишатися чуйною до дій користувача під час відтворення.
-                    Користувач задає затримку між кадрами в мілісекундах через текстове поле. Метод play_next() зчитує це значення (з обробкою винятків ValueError для запобігання збоям при введенні символів) і рекурсивно планує показ наступного кадру. Для відображення фотографій на екрані метод show_current_image() щоразу викликає img.thumbnail(), що дозволяє динамічно адаптувати розмір зображення до поточних габаритів вікна зі збереженням пропорцій. Для запобігання витокам пам'яті (memory leaks) перехоплюється подія закриття вікна "WM_DELETE_WINDOW", при якій таймер примусово зупиняється через after_cancel().</li>
+                    Програвач слайд-шоу винесено в окреме вікно, кероване класом SlideshowWindow. Замість використання функції time.sleep(), яка б повністю заблокувала головний потік виконання, для створення затримки використано метод Tkinter self.after(delay, callback), що дозволяє програмі відгукуватися на дії користувача під час відтворення.
+                    Користувач задає затримку між кадрами в мілісекундах через текстове поле. Метод play_next() зчитує це значення і рекурсивно планує показ наступного кадру. Для відображення фотографій на екрані метод show_current_image() щоразу викликає img.thumbnail(), що дозволяє динамічно адаптувати розмір зображення до поточних габаритів вікна зі збереженням пропорцій.</li>
                 <br/>
             </ul>
         </article>
@@ -100,7 +98,10 @@
 				</div>
 				<div class="code-collapse">
 					<pre><code>
-from dataclasses import dataclass
+                        from dataclasses import dataclass
+
+from PIL import Image
+
 
 @dataclass
 class EditSpec:
@@ -115,77 +116,48 @@ class EditSpec:
     new_color: tuple = None
     tolerance: float = 0.0
 
+    combine_image: Image.Image = None
+    combine_side: str = "right"
+
+    watermark_text: str = ""
+    watermark_color: tuple = (255, 255, 255)
+    watermark_alpha: float = 1.0
+    watermark_size: int = 36
+    watermark_x: int = 10
+    watermark_y: int = 10
+
 @dataclass
 class BatchSpec:
     input_paths: list
     output_dir: str
     format_choice: str = "Keep Original"
     edit_spec: EditSpec = None
-</code></pre>
+                    </code></pre>
 				</div>
 			</div>
-			<div class="code-block">
-				<div class="code-header" onclick="toggleCode(this)">
-                logic.py
-				</div>
-				<div class="code-collapse">
-					<pre><code>
-import tkinter as tk
+            <div class="code-block">
+                <div class="code-header" onclick="toggleCode(this)">
+                    logic.py
+                </div>
+                <div class="code-collapse">
+                    <pre><code>
+                        import tkinter as tk
 from tkinter import filedialog, messagebox
 from pathlib import Path
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageTk, ImageDraw, ImageFont
 
 from data import EditSpec, BatchSpec
 
 class ImageEditorLogic:
     @staticmethod
-    def resize(image: Image.Image, width: int, height: int) -&gt; Image.Image:
+    def resize(image: Image.Image, width: int, height: int) -> Image.Image:
         width = max(1, int(width))
         height = max(1, int(height))
         return image.resize((width, height), Image.Resampling.LANCZOS)
 
     @staticmethod
-    def define_color_scheme(image: Image.Image) -&gt; Image.Image:
-        if image.mode in ("RGB", "RGBA"):
-            return image
-        return image.convert("RGBA")
-
-    @staticmethod
-    def balance(image: Image.Image, r_scale: float, g_scale: float, b_scale: float) -&gt; Image.Image:
-        img = ImageEditorLogic.define_color_scheme(image)
-        data = np.array(img, dtype = np.float32)
-        data[..., 0] *= r_scale
-        data[..., 1] *= g_scale
-        data[..., 2] *= b_scale
-        data = np.clip(data, 0, 255).astype(np.uint8)
-        return Image.fromarray(data)
-
-    @staticmethod
-    def recolor(image: Image.Image, old_rgb: tuple, new_rgb: tuple, tolerance: float = 20.0) -&gt; Image.Image:
-        img = ImageEditorLogic.define_color_scheme(image)
-        data = np.array(img, dtype = np.int32)
-
-        rgb = data[..., :3]
-        target = np.array(old_rgb[:3], dtype = np.int32)
-        distance = np.sum((rgb - target) ** 2, axis = -1)
-        mask = distance &lt;= (tolerance ** 2)
-
-        data[..., :3][mask] = new_rgb[:3]
-        return Image.fromarray(data.astype(np.uint8))
-    
-    @staticmethod
-    def opacity(image: Image.Image, alpha: float) -&gt; Image.Image:
-        img = ImageEditorLogic.define_color_scheme(image)
-        data = np.array(img, dtype=np.float32)
-        
-        data[..., 3] *= alpha
-        
-        data = np.clip(data, 0, 255).astype(np.uint8)
-        return Image.fromarray(data)
-
-    @staticmethod
-    def resize_keep_aspect(image: Image.Image, width: int = None, height: int = None) -&gt; Image.Image:
+    def resize_keep_aspect(image: Image.Image, width: int = None, height: int = None) -> Image.Image:
         if not width and not height:
             return image
 
@@ -197,9 +169,60 @@ class ImageEditorLogic:
         else:
             width = max(1, int(height * (orig_width / orig_height)))
         return ImageEditorLogic.resize(image, width, height)
-        
+
     @staticmethod
-    def cut_area(image: Image.Image, box: tuple) -&gt; Image.Image:
+    def define_color_scheme(image: Image.Image) -> Image.Image:
+        if image.mode in ("RGB", "RGBA"):
+            return image
+        return image.convert("RGBA")
+
+    @staticmethod
+    def balance(image: Image.Image, r_scale: float, g_scale: float, b_scale: float) -> Image.Image:
+        img = ImageEditorLogic.define_color_scheme(image)
+        data = np.array(img, dtype = np.float32)
+        data[..., 0] *= r_scale
+        data[..., 1] *= g_scale
+        data[..., 2] *= b_scale
+        data = np.clip(data, 0, 255).astype(np.uint8)
+        return Image.fromarray(data)
+
+    @staticmethod
+    def recolor(image: Image.Image, old_rgb: tuple, new_rgb: tuple, tolerance: float = 20.0) -> Image.Image:
+        img = ImageEditorLogic.define_color_scheme(image)
+        data = np.array(img, dtype = np.int32)
+
+        rgb = data[..., :3]
+        target = np.array(old_rgb[:3], dtype = np.int32)
+        distance = np.sum((rgb - target) ** 2, axis = -1)
+        mask = distance <= (tolerance ** 2)
+
+        data[..., :3][mask] = new_rgb[:3]
+        return Image.fromarray(data.astype(np.uint8))
+
+    @staticmethod
+    def opacity(image: Image.Image, alpha: float) -> Image.Image:
+        img = ImageEditorLogic.define_color_scheme(image)
+        data = np.array(img, dtype=np.float32)
+
+        data[..., 3] *= alpha
+
+        data = np.clip(data, 0, 255).astype(np.uint8)
+        return Image.fromarray(data)
+
+    @staticmethod
+    def contrast(image: Image.Image, factor: float) -> Image.Image:
+        img = ImageEditorLogic.define_color_scheme(image)
+        data = np.array(img, dtype=np.float32)
+
+        avg_y = np.mean(data[..., :3], axis=(0, 1), keepdims=True)
+
+        data[..., :3] = (data[..., :3] - avg_y) * factor + avg_y
+
+        data = np.clip(data, 0, 255).astype(np.uint8)
+        return Image.fromarray(data)
+
+    @staticmethod
+    def cut_area(image: Image.Image, box: tuple) -> Image.Image:
         img = ImageEditorLogic.define_color_scheme(image)
         data = np.array(img)
         x1, y1, x2, y2 = box
@@ -208,36 +231,84 @@ class ImageEditorLogic:
         return Image.fromarray(data)
 
     @staticmethod
-    def split_image(image: Image.Image, rows: int, cols: int) -&gt; list:
+    def split_image(image: Image.Image, rows: int, cols: int) -> list:
         width, height = image.size
         tile_width, tile_height = width // cols, height // rows
         parts = []
-        
+
         for row in range(rows):
             for col in range(cols):
                 left = col * tile_width
                 top = row * tile_height
-                right = left + tile_width if col &lt; cols - 1 else width
-                bottom = top + tile_height if row &lt; rows - 1 else height
-                
+                right = left + tile_width if col < cols - 1 else width
+                bottom = top + tile_height if row < rows - 1 else height
+
                 parts.append(image.crop((left, top, right, bottom)))
         return parts
-        
+
     @staticmethod
-    def contrast(image: Image.Image, factor: float) -&gt; Image.Image:
+    def combine(main_image: Image.Image, added_image: Image.Image, side: str) -> Image.Image:
+        if side not in ("left", "right", "top", "bottom"):
+            return main_image
+
+        main_img = ImageEditorLogic.define_color_scheme(main_image)
+        added_img = ImageEditorLogic.define_color_scheme(added_image)
+
+        if side in ("left", "right"):
+            temp_image = ImageEditorLogic.resize_keep_aspect(added_img, height=main_img.height)
+            new_width = main_img.width + temp_image.width
+            new_height = max(main_img.height, temp_image.height)
+        else:
+            temp_image = ImageEditorLogic.resize_keep_aspect(added_img, width=main_img.width)
+            new_width = max(main_img.width, temp_image.width)
+            new_height = main_img.height + temp_image.height
+
+        new_canvas = Image.new("RGBA", (new_width, new_height), (0, 0, 0, 0))
+
+        if side == "left":
+            new_canvas.paste(temp_image, (0, 0))
+            new_canvas.paste(main_img, (temp_image.width, 0))
+        elif side == "right":
+            new_canvas.paste(main_img, (0, 0))
+            new_canvas.paste(temp_image, (main_img.width, 0))
+        elif side == "top":
+            new_canvas.paste(temp_image, (0, 0))
+            new_canvas.paste(main_img, (0, temp_image.height))
+        elif side == "bottom":
+            new_canvas.paste(main_img, (0, 0))
+            new_canvas.paste(temp_image, (0, main_img.height))
+
+        return new_canvas
+
+    @staticmethod
+    def watermark(image: Image.Image, watermark: str, x: int, y: int, color: tuple, alpha: float, size: int) -> Image.Image:
+        if size <= 0 or size >= 1028 or not watermark:
+            return image.copy()
+
         img = ImageEditorLogic.define_color_scheme(image)
-        data = np.array(img, dtype=np.float32)
 
-        avg_y = np.mean(data[..., :3], axis=(0, 1), keepdims=True)
-        
-        data[..., :3] = (data[..., :3] - avg_y) * factor + avg_y
-        
-        data = np.clip(data, 0, 255).astype(np.uint8)
-        return Image.fromarray(data)
+        overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
+        draw = ImageDraw.Draw(overlay)
+
+        alpha_val = int(max(0.0, min(1.0, alpha)) * 255)
+        rgba_color = (int(color[0]), int(color[1]), int(color[2]), alpha_val)
+
+        font = ImageFont.load_default(size=size)
+        draw.text((x, y), watermark, fill=rgba_color, font=font)
+
+        edited_img = Image.alpha_composite(img, overlay)
+
+        return edited_img
+
 
     @staticmethod
-    def apply(image: Image.Image, spec: EditSpec) -&gt; Image.Image:
+    def apply(image: Image.Image, spec: EditSpec) -> Image.Image:
         img = image.copy()
+
+        if spec.combine_image:
+            img = ImageEditorLogic.combine(img, spec.combine_image, spec.combine_side)
+            spec.width = None
+            spec.height = None
 
         if spec.width and spec.height:
             if (spec.width, spec.height) != (img.width, img.height):
@@ -245,7 +316,7 @@ class ImageEditorLogic:
         elif spec.width or spec.height:
             img = ImageEditorLogic.resize_keep_aspect(img, spec.width, spec.height)
 
-        if spec.tolerance &gt; 0:
+        if spec.tolerance > 0:
             img = ImageEditorLogic.recolor(img, spec.old_color, spec.new_color, spec.tolerance)
 
         if (spec.r, spec.g, spec.b) != (1.0, 1.0, 1.0):
@@ -257,8 +328,19 @@ class ImageEditorLogic:
         if spec.alpha != 1.0:
             img = ImageEditorLogic.opacity(img, spec.alpha)
 
+        if spec.watermark_text:
+            img = ImageEditorLogic.watermark(
+                img,
+                spec.watermark_text,
+                spec.watermark_x,
+                spec.watermark_y,
+                spec.watermark_color,
+                spec.watermark_alpha,
+                spec.watermark_size
+            )
+
         return img
-        
+
 class ImageIO:
 
     FORMAT_MAP = {
@@ -295,7 +377,7 @@ class ImageIO:
 
         format = ImageIO.FORMAT_MAP.get(f".{chosen_type.lower()}", "PNG")
         new_ext = next(i for i, j in ImageIO.FORMAT_MAP.items() if j == format)
-        
+
         if not ext:
             return path.with_suffix(new_ext), format
         else:
@@ -372,23 +454,117 @@ class BatchProcessor:
                 if on_error:
                     on_error(file_path, e)
 
-        return count        
-</code></pre>
-				</div>
-			</div>
+        return count
+                    </code></pre>
+                </div>
+            </div>
 			<div class="code-block">
 				<div class="code-header" onclick="toggleCode(this)">
                 ui.py
 				</div>
 				<div class="code-collapse">
-					<pre><code>
-import tkinter as tk
+                    <pre><code>
+                        import tkinter as tk
 from tkinter import colorchooser, filedialog, messagebox, ttk
 from pathlib import Path
 from PIL import Image, ImageTk
 
 from data import EditSpec, BatchSpec
 from logic import ImageEditorLogic, ImageIO, BatchProcessor
+
+
+class SlideshowWindow(tk.Toplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.title("Slideshow Player")
+        self.geometry("800x600")
+        self.transient(parent)
+
+        self.image_paths = []
+        self.current_index = 0
+        self.is_playing = False
+        self.next_id = None
+        self.current_photo = None
+
+        self.setup_ui()
+
+    def setup_ui(self):
+        top_frame = ttk.Frame(self, padding=5)
+        top_frame.pack(side="top", fill="x")
+
+        ttk.Button(top_frame, text="Open Images...", command=self.load_images).pack(side="left")
+        self.lbl_status = ttk.Label(top_frame, text="No images selected")
+        self.lbl_status.pack(side="left", padx=(10, 20))
+
+        ttk.Label(top_frame, text="Delay (ms):", font=("", 9, "bold")).pack(side="left")
+
+        self.speed_var = tk.StringVar(value="1000")
+        self.speed_entry = ttk.Entry(top_frame, textvariable=self.speed_var, width=6)
+        self.speed_entry.pack(side="left", padx=5)
+
+        self.canvas = tk.Canvas(self, bg="black")
+        self.canvas.pack(side="top", fill="both", expand=True)
+        self.canvas.bind("&lt;Configure>", lambda e: self.show_current_image())
+
+    def update_speed_label(self):
+        self.lbl_speed.config(text=f"{int(self.speed_var.get())} ms")
+
+    def load_images(self):
+        paths = filedialog.askopenfilenames(
+            parent=self,
+            title="Select Images for Slideshow",
+            filetypes=[("Images", "*.jpg *.jpeg *.png *.webp *.bmp *.tif *.tiff")]
+        )
+        if paths:
+            self.image_paths = list(paths)
+            self.current_index = 0
+            self.lbl_status.config(text=f"{len(self.image_paths)} images playing...")
+
+            if not self.is_playing:
+                self.is_playing = True
+                self.play_next()
+
+    def play_next(self):
+        if not self.image_paths or not self.is_playing:
+            return
+
+        self.show_current_image()
+        self.current_index = (self.current_index + 1) % len(self.image_paths)
+
+        try:
+            delay = int(self.speed_var.get())
+            if delay < 1:
+                delay = 1
+        except ValueError:
+            delay = 1000
+
+        self.next_id = self.after(delay, self.play_next)
+
+    def show_current_image(self):
+        if not self.image_paths:
+            return
+
+        canvas_width = self.canvas.winfo_width()
+        canvas_height = self.canvas.winfo_height()
+        if canvas_width < 20 or canvas_height < 20:
+            return
+
+        try:
+            img = ImageIO.read_image(self.image_paths[self.current_index])
+
+            img.thumbnail((canvas_width, canvas_height), Image.Resampling.LANCZOS)
+            self.current_photo = ImageTk.PhotoImage(img)
+
+            self.canvas.delete("all")
+            self.canvas.create_image(canvas_width // 2, canvas_height // 2, image=self.current_photo, anchor="center")
+        except Exception as e:
+            print(f"Skipping unreadable image: {e}")
+
+    def on_close(self):
+        self.is_playing = False
+        if self.next_id:
+            self.after_cancel(self.next_id)
+        self.destroy()
 
 class BatchWindow(tk.Toplevel):
     def __init__(self, parent):
@@ -439,9 +615,9 @@ class BatchWindow(tk.Toplevel):
         ttk.Label(frame, text="4. Output Format:", font=("", 10, "bold")).pack(anchor="w", pady=(0, 2))
         self.format_var = tk.StringVar(value="Keep Original")
         format_combo = ttk.Combobox(
-            frame, 
-            textvariable=self.format_var, 
-            values=["Keep Original", "PNG", "JPEG", "WEBP", "BMP"], 
+            frame,
+            textvariable=self.format_var,
+            values=["Keep Original", "PNG", "JPEG", "WEBP", "BMP"],
             state="readonly"
         )
         format_combo.pack(fill="x", pady=(0, 15))
@@ -475,8 +651,8 @@ class BatchWindow(tk.Toplevel):
 
         w_str = self.ent_w.get().strip()
         h_str = self.ent_h.get().strip()
-        target_w = int(w_str) if w_str.isdigit() and int(w_str) &gt; 0 else None
-        target_h = int(h_str) if h_str.isdigit() and int(h_str) &gt; 0 else None
+        target_w = int(w_str) if w_str.isdigit() and int(w_str) > 0 else None
+        target_h = int(h_str) if h_str.isdigit() and int(h_str) > 0 else None
 
         spec = BatchSpec(
             input_paths=self.input_paths,
@@ -505,7 +681,7 @@ class UI:
 
         self.old_color = (255, 255, 255)
         self.new_color = (255, 0, 0)
-        
+
         self.crop_x1 = 0
         self.crop_y1 = 0
         self.crop_x2 = 0
@@ -513,7 +689,10 @@ class UI:
         self.drag_mode = None
         self.last_x = 0
         self.last_y = 0
-        
+
+        self.watermark_color = (255, 255, 255)
+        self.combine_image = None
+
         self.preview_scale = 1.0
         self.img_x = 0
         self.img_y = 0
@@ -531,11 +710,12 @@ class UI:
         ttk.Button(btn_frame, text = "Open Image...", command = self.load_image).pack(side = "left", fill = "x", expand = True, padx = (0, 4))
         ttk.Button(btn_frame, text = "Save Image...", command = self.save_image).pack(side = "right", fill = "x", expand = True, padx = (4, 0))
         ttk.Button(btn_frame, text = "Batch...", command = self.open_batch_window).pack(side = "right", fill = "x", expand = True, padx = (2, 0))
+        ttk.Button(btn_frame, text="Slideshow...", command=self.open_slideshow_window).pack(side="left", fill="x", expand=True, padx=(2, 0))
 
         # Tabbed Control Notebook
         self.tabs = ttk.Notebook(left_panel)
         self.tabs.pack(fill = "both", expand = True)
-        self.tabs.bind("&lt;&lt;NotebookTabChanged&gt;&gt;", self.on_tab_change)
+        self.tabs.bind("<&lt;NotebookTabChanged>>", self.on_tab_change)
 
         # Resize
         tab_resize = ttk.Frame(self.tabs, padding = 10)
@@ -559,7 +739,7 @@ class UI:
         # Color Balance/Tolerance/Contrast
         tab_color = ttk.Frame(self.tabs, padding = 10)
         self.tabs.add(tab_color, text = "Color")
-        
+
         self.overall_scale = self.create_slider(tab_color, "Overall Balance:")
         self.r_scale = self.create_slider(tab_color, "Red:")
         self.g_scale = self.create_slider(tab_color, "Green:")
@@ -600,12 +780,68 @@ class UI:
 
         ttk.Button(tab_recolor, text = "Reset Recolor", command = self.reset_recolor).pack(pady=6)
 
+        # Combine
+        tab_combine = ttk.Frame(self.tabs, padding=10)
+        self.tabs.add(tab_combine, text="Combine")
+
+        btn_row = ttk.Frame(tab_combine)
+        btn_row.pack(fill="x", pady=(0, 5))
+        ttk.Button(btn_row, text="Select Image to Combine...", command=self.load_combine_image).pack(side="left", fill="x", expand=True)
+        ttk.Button(btn_row, text="X", width=3, command=self.clear_combine).pack(side="left", padx=(5, 0))
+
+        self.lbl_combine_file = ttk.Label(tab_combine, text="No image selected", foreground="gray")
+        self.lbl_combine_file.pack(anchor="w", pady=(0, 10))
+
+        ttk.Label(tab_combine, text="Direction:").pack(anchor="w")
+        self.combine_side_var = tk.StringVar(value="right")
+        self.combine_side_var.trace_add("write", lambda *_: self.apply_edits())
+        side_combo = ttk.Combobox(tab_combine, textvariable=self.combine_side_var, values=["left", "right", "top", "bottom"], state="readonly")
+        side_combo.pack(fill="x", pady=(0, 15))
+
+        ttk.Button(tab_combine, text="Apply Combine", command=self.action_combine).pack(fill="x")
+
+        # Watermark
+        tab_watermark = ttk.Frame(self.tabs, padding=10)
+        self.tabs.add(tab_watermark, text="Watermark")
+
+        ttk.Label(tab_watermark, text="Text:").pack(anchor="w")
+        self.watermark_text_var = tk.StringVar()
+        self.watermark_text_var.trace_add("write", lambda *_: self.apply_edits())
+        ttk.Entry(tab_watermark, textvariable=self.watermark_text_var).pack(fill="x", pady=(0, 10))
+
+        pos_frame = ttk.Frame(tab_watermark)
+        pos_frame.pack(fill="x", pady=(0, 10))
+        ttk.Label(pos_frame, text="X:").pack(side="left")
+        self.wm_x_var = tk.StringVar(value="10")
+        self.wm_x_var.trace_add("write", lambda *_: self.apply_edits())
+        ttk.Entry(pos_frame, textvariable=self.wm_x_var, width=5).pack(side="left", padx=(2, 10))
+        ttk.Label(pos_frame, text="Y:").pack(side="left")
+        self.wm_y_var = tk.StringVar(value="10")
+        self.wm_y_var.trace_add("write", lambda *_: self.apply_edits())
+        ttk.Entry(pos_frame, textvariable=self.wm_y_var, width=5).pack(side="left", padx=(2, 0))
+
+        ttk.Label(tab_watermark, text="Color:").pack(anchor="w", pady=(5, 2))
+        wm_col_row = ttk.Frame(tab_watermark)
+        wm_col_row.pack(fill="x", pady=(0, 10))
+        self.swatch_watermark = tk.Label(wm_col_row, width=4, bg="#ffffff", relief="solid", bd=1)
+        self.swatch_watermark.pack(side="left", padx=(0, 8))
+        ttk.Button(wm_col_row, text="Choose...", command=self.pick_watermark_color).pack(side="left")
+
+        ttk.Label(tab_watermark, text="Font Size:").pack(anchor="w")
+        self.wm_size_var = tk.StringVar(value="40")
+        self.wm_size_var.trace_add("write", lambda *_: self.apply_edits())
+        ttk.Entry(tab_watermark, textvariable=self.wm_size_var).pack(fill="x", pady=(0, 10))
+
+        ttk.Label(tab_watermark, text="Text Opacity:").pack(anchor="w")
+        self.watermark_alpha_scale = ttk.Scale(tab_watermark, from_=0.0, to=1.0, value=1.0, command=lambda _: self.apply_edits())
+        self.watermark_alpha_scale.pack(fill="x", pady=(0, 10))
+
         # Crop
         tab_crop = ttk.Frame(self.tabs, padding = 10)
         self.tabs.add(tab_crop, text = "Crop")
-        
+
         ttk.Label(tab_crop, text="Adjust the crop box on the image,\nthen choose an action:", font=("", 9, "italic")).pack(pady=(0, 10))
-        
+
         ttk.Button(tab_crop, text="Crop (Keep inside box)", command=self.action_crop).pack(fill="x", pady=2)
         ttk.Button(tab_crop, text="Cut (Remove inside box)", command=self.action_cut).pack(fill="x", pady=(2, 15))
         ttk.Button(tab_crop, text="Reset Box Position", command=self.init_crop_box).pack(fill="x", pady=(0, 15))
@@ -613,34 +849,77 @@ class UI:
         # Split
         tab_split = ttk.Frame(self.tabs, padding = 10)
         self.tabs.add(tab_split, text = "Split")
-        
+
         ttk.Label(tab_split, text="Split entire image into a grid:", font=("", 9, "bold")).pack(anchor="w", pady=(0, 10))
-        
+
         split_frame = ttk.Frame(tab_split)
         split_frame.pack(fill="x", pady=5)
-        
+
         ttk.Label(split_frame, text="Rows:").pack(side="left")
         self.split_rows_var = tk.StringVar(value="2")
         self.split_rows_var.trace_add("write", lambda *_: self.draw_split_grid())
         self.split_rows = ttk.Entry(split_frame, width=5, textvariable=self.split_rows_var)
         self.split_rows.pack(side="left", padx=(2, 10))
-        
+
         ttk.Label(split_frame, text="Cols:").pack(side="left")
         self.split_cols_var = tk.StringVar(value="2")
         self.split_cols_var.trace_add("write", lambda *_: self.draw_split_grid())
         self.split_cols = ttk.Entry(split_frame, width=5, textvariable=self.split_cols_var)
         self.split_cols.pack(side="left", padx=2)
-        
+
         ttk.Button(tab_split, text="Split & Save Parts...", command=self.action_split).pack(fill="x", pady=15)
 
         # Right Panel
         self.canvas = tk.Canvas(self.root, bg = "#e5e5e5")
         self.canvas.pack(side = "right", fill = "both", expand = True, padx = 10, pady = 10)
-        self.canvas.bind("&lt;Configure&gt;", lambda e: self.update_preview())
-        
-        self.canvas.bind("&lt;ButtonPress-1&gt;", self.on_mouse_down)
-        self.canvas.bind("&lt;B1-Motion&gt;", self.on_mouse_drag)
-        self.canvas.bind("&lt;Motion&gt;", self.on_mouse_hover)
+        self.canvas.bind("&lt;Configure>", lambda e: self.update_preview())
+
+        self.canvas.bind("&lt;ButtonPress-1>", self.on_mouse_down)
+        self.canvas.bind("&lt;B1-Motion>", self.on_mouse_drag)
+        self.canvas.bind("&lt;Motion>", self.on_mouse_hover)
+
+    def load_combine_image(self):
+        img, path = ImageIO.load_image(parent=self.root)
+        if img:
+            self.is_updating = True
+            self.combine_image = img
+            self.lbl_combine_file.config(text=Path(path).name)
+            self.apply_edits()
+
+    def clear_combine(self):
+        self.is_updating = False
+        self.combine_image = None
+        self.lbl_combine_file.config(text="No image selected")
+        self.apply_edits()
+
+    def action_combine(self):
+        if not self.original or not getattr(self, 'combine_image', None):
+            messagebox.showwarning("Warning", "Please select an image to combine.")
+            return
+
+        self.original = ImageEditorLogic.combine(self.original, self.combine_image, self.combine_side_var.get())
+
+        self.combine_image = None
+        self.lbl_combine_file.config(text="No image selected")
+
+        self.is_updating = True
+        self.aspect_ratio = self.original.width / self.original.height
+        self.width.set(str(self.original.width))
+        self.height.set(str(self.original.height))
+        self.is_updating = False
+
+        self.apply_edits()
+
+    def pick_watermark_color(self):
+        color = colorchooser.askcolor(title="Select Watermark Color")[0]
+        if color:
+            self.watermark_color = tuple(map(int, color))
+            hex = f"#{self.watermark_color[0]:02x}{self.watermark_color[1]:02x}{self.watermark_color[2]:02x}"
+            self.swatch_watermark.configure(bg=hex)
+            self.apply_edits()
+
+    def open_slideshow_window(self):
+        SlideshowWindow(self.root)
 
     def open_batch_window(self):
         BatchWindow(self.root)
@@ -688,12 +967,12 @@ class UI:
             self.is_updating = True
             if changed_side == "w" and self.keep_aspect.get():
                 val = self.width.get().strip()
-                if val.isdigit() and int(val) &gt; 0:
+                if val.isdigit() and int(val) > 0:
                     new_height = max(1, int(int(val) / self.aspect_ratio))
                     self.height.set(str(new_height))
             elif changed_side == "h" and self.keep_aspect.get():
                 val = self.height.get().strip()
-                if val.isdigit() and int(val) &gt; 0:
+                if val.isdigit() and int(val) > 0:
                     new_width = max(1, int(int(val) * self.aspect_ratio))
                     self.width.set(str(new_width))
             self.is_updating = False
@@ -706,21 +985,43 @@ class UI:
             return
 
         overall = self.overall_scale.get()
+
+        try:
+            wm_x = int(self.wm_x_var.get())
+        except ValueError:
+            wm_x = 10
+        try:
+            wm_y = int(self.wm_y_var.get())
+        except ValueError:
+            wm_y = 10
+        try:
+            wm_size = int(self.wm_size_var.get())
+        except ValueError:
+            wm_size = 0
+
         spec = EditSpec(
-            r = self.r_scale.get() * overall,
-            g = self.g_scale.get() * overall,
-            b = self.b_scale.get() * overall,
-            contrast = self.contrast_scale.get(),
-            alpha = self.alpha_scale.get(),
-            old_color = self.old_color,
-            new_color = self.new_color,
-            tolerance = self.tolerance_scale.get(),
+            r=self.r_scale.get() * overall,
+            g=self.g_scale.get() * overall,
+            b=self.b_scale.get() * overall,
+            contrast=self.contrast_scale.get(),
+            alpha=self.alpha_scale.get(),
+            old_color=self.old_color,
+            new_color=self.new_color,
+            tolerance=self.tolerance_scale.get(),
+            combine_image=getattr(self, 'combine_image', None),
+            combine_side=self.combine_side_var.get(),
+            watermark_text=self.watermark_text_var.get(),
+            watermark_color=self.watermark_color,
+            watermark_alpha=self.watermark_alpha_scale.get(),
+            watermark_size=wm_size,
+            watermark_x=wm_x,
+            watermark_y=wm_y
         )
 
         try:
             width = int(self.width.get())
             height = int(self.height.get())
-            if width &gt; 0 and height &gt; 0:
+            if width > 0 and height > 0:
                 spec.width = width
                 spec.height = height
         except (ValueError, TypeError):
@@ -734,10 +1035,10 @@ class UI:
             return
 
         canvas_width, canvas_height = self.canvas.winfo_width(), self.canvas.winfo_height()
-        if canvas_width &lt; 20 or canvas_height &lt; 20: return
-        
+        if canvas_width < 20 or canvas_height < 20: return
+
         current_tab = self.tabs.tab(self.tabs.select(), "text")
-        
+
         rel_box = None
         if current_tab == "Crop" and hasattr(self, 'crop_x1') and self.preview:
             preview_width, preview_height = self.preview.width(), self.preview.height()
@@ -749,15 +1050,15 @@ class UI:
         preview = self.edited.copy()
         old_width = preview.width
         preview.thumbnail((canvas_width - 16, canvas_height - 16), Image.Resampling.LANCZOS)
-        
+
         self.preview_scale = preview.width / old_width
         self.img_x = (canvas_width - preview.width) // 2
         self.img_y = (canvas_height - preview.height) // 2
 
         self.preview = ImageTk.PhotoImage(preview)
-        self.canvas.delete("image") 
+        self.canvas.delete("image")
         self.canvas.create_image(self.img_x, self.img_y, image=self.preview, anchor="nw", tags="image")
-        self.canvas.tag_lower("image") 
+        self.canvas.tag_lower("image")
 
         if current_tab == "Crop":
             if rel_box:
@@ -772,7 +1073,7 @@ class UI:
 
     def on_tab_change(self, event):
         current_tab = self.tabs.tab(self.tabs.select(), "text")
-        
+
         self.canvas.delete("crop_element")
         self.canvas.delete("split_grid")
         self.canvas.config(cursor="")
@@ -781,30 +1082,30 @@ class UI:
             self.init_crop_box()
         elif current_tab == "Split":
             self.draw_split_grid()
-        
+
     def action_split(self):
-        if not self.original:
+        if not self.original or self.is_updating:
             return
         try:
             rows, cols = int(self.split_rows.get()), int(self.split_cols.get())
-            if rows &lt; 1 or cols &lt; 1: raise ValueError
+            if rows < 1 or cols < 1: raise ValueError
         except ValueError:
-            messagebox.showerror("Error", "Rows and Columns must be integers &gt; 0.", parent=self.root)
+            messagebox.showerror("Error", "Rows and Columns must be integers > 0.", parent=self.root)
             return
-            
+
         folder = filedialog.askdirectory(parent=self.root, title="Select Folder to Save Split Parts")
         if not folder: return
 
         parts = ImageEditorLogic.split_image(self.edited, rows, cols)
-        
+
         base_name = Path(self.file_path).stem if hasattr(self, 'file_path') and self.file_path else "image"
-        
+
         for i, part in enumerate(parts):
             path = Path(folder) / f"{base_name}_part_{i+1}.png"
             ImageIO.write_image(part, path, "PNG")
-            
+
         messagebox.showinfo("Success", f"Successfully saved {len(parts)} parts!", parent=self.root)
-        
+
     def draw_split_grid(self):
         self.canvas.delete("split_grid")
         if self.tabs.tab(self.tabs.select(), "text") != "Split":
@@ -815,77 +1116,77 @@ class UI:
         try:
             rows = int(self.split_rows_var.get())
             cols = int(self.split_cols_var.get())
-            if rows &lt; 1 or cols &lt; 1: return
+            if rows < 1 or cols < 1: return
         except ValueError:
             return
 
         preview_width = self.preview.width()
         preview_height = self.preview.height()
-        
+
         for col in range(1, cols):
             x = self.img_x + col * (preview_width / cols)
             self.canvas.create_line(x, self.img_y, x, self.img_y + preview_height, fill="red", dash=(4, 4), tags="split_grid", width=2)
-        
+
         for row in range(1, rows):
             y = self.img_y + row * (preview_height / rows)
             self.canvas.create_line(self.img_x, y, self.img_x + preview_width, y, fill="red", dash=(4, 4), tags="split_grid", width=2)
-        
+
     def get_selected_box(self):
         x1 = int(((self.crop_x1 - self.img_x) / self.preview_scale) * (self.original.width / self.edited.width))
         y1 = int(((self.crop_y1 - self.img_y) / self.preview_scale) * (self.original.height / self.edited.height))
         x2 = int(((self.crop_x2 - self.img_x) / self.preview_scale) * (self.original.width / self.edited.width))
-        y2 = int(   ((self.crop_y2 - self.img_y) / self.preview_scale) * (self.original.height / self.edited.height))
-        
+        y2 = int(((self.crop_y2 - self.img_y) / self.preview_scale) * (self.original.height / self.edited.height))
+
         return (max(0, x1), max(0, y1), min(self.original.width, x2), min(self.original.height, y2))
 
     def action_crop(self):
-        if not self.original:
-            return 
+        if not self.original or self.is_updating:
+            return
         box = self.get_selected_box()
         self.original = self.original.crop(box)
-        
+
         self.is_updating = True
         self.aspect_ratio = self.original.width / self.original.height
         self.width.set(str(self.original.width))
         self.height.set(str(self.original.height))
         self.is_updating = False
-        
+
         self.apply_edits()
         self.init_crop_box()
 
     def action_cut(self):
-        if not self.original:
-            return 
+        if not self.original or self.is_updating:
+            return
         box = self.get_selected_box()
         self.original = ImageEditorLogic.cut_area(self.original, box)
-        
+
         self.apply_edits()
-        
+
     def init_crop_box(self):
         if not hasattr(self, 'preview') or not self.preview:
             return
         preview_width, preview_height = self.preview.width(), self.preview.height()
-        
+
         center_x, center_y = self.img_x + preview_width/2, self.img_y + preview_height/2
         box_w, box_h = preview_width * 0.8, preview_height * 0.8
-        
+
         self.crop_x1 = center_x - box_w/2
         self.crop_y1 = center_y - box_h/2
         self.crop_x2 = center_x + box_w/2
         self.crop_y2 = center_y + box_h/2
-        
+
         self.draw_crop_box()
 
     def draw_crop_box(self):
         self.canvas.delete("crop_element")
         if not hasattr(self, 'crop_x1'):
             return
-        
+
         self.canvas.create_rectangle(
-            self.crop_x1, self.crop_y1, self.crop_x2, self.crop_y2, 
+            self.crop_x1, self.crop_y1, self.crop_x2, self.crop_y2,
             outline="#00aaff", width=2, dash=(5, 5), tags="crop_element"
         )
-        
+
         h = 4
         points = {
             "nw": (self.crop_x1, self.crop_y1), "ne": (self.crop_x2, self.crop_y1),
@@ -895,55 +1196,55 @@ class UI:
             "w": (self.crop_x1, (self.crop_y1+self.crop_y2)/2),
             "e": (self.crop_x2, (self.crop_y1+self.crop_y2)/2)
         }
-        
+
         for name, (x, y) in points.items():
             self.canvas.create_rectangle(
-                x-h, y-h, x+h, y+h, fill="white", outline="#00aaff", 
+                x-h, y-h, x+h, y+h, fill="white", outline="#00aaff",
                 tags=("crop_element", f"handle_{name}")
             )
 
     def on_mouse_down(self, event):
-        self.drag_mode = None 
+        self.drag_mode = None
         if self.tabs.tab(self.tabs.select(), "text") != "Crop":
-            return 
-        
+            return
+
         items = self.canvas.find_withtag("current")
         self.last_x, self.last_y = event.x, event.y
-        
+
         if items:
             tags = self.canvas.gettags(items[0])
             for tag in tags:
                 if tag.startswith("handle_"):
                     self.drag_mode = tag.split("_")[1]
                     return
-                    
-        if self.crop_x1 &lt; event.x &lt; self.crop_x2 and self.crop_y1 &lt; event.y &lt; self.crop_y2:
+
+        if self.crop_x1 < event.x < self.crop_x2 and self.crop_y1 < event.y < self.crop_y2:
             self.drag_mode = "move"
 
     def on_mouse_drag(self, event):
         if self.tabs.tab(self.tabs.select(), "text") != "Crop":
-            return 
+            return
         if not self.drag_mode:
             return
-        
+
         dx = event.x - self.last_x
         dy = event.y - self.last_y
         self.last_x, self.last_y = event.x, event.y
-        
+
         max_x = self.img_x + self.preview.width()
         max_y = self.img_y + self.preview.height()
         min_w, min_h = 30, 30
-        
+
         if self.drag_mode == "move":
-            if self.crop_x1 + dx &lt; self.img_x:
+            if self.crop_x1 + dx < self.img_x:
                 dx = self.img_x - self.crop_x1
-            if self.crop_x2 + dx &gt; max_x:
+            if self.crop_x2 + dx > max_x:
                 dx = max_x - self.crop_x2
-            if self.crop_y1 + dy &lt; self.img_y:
+            if self.crop_y1 + dy < self.img_y:
                 dy = self.img_y - self.crop_y1
-            if self.crop_y2 + dy &gt; max_y:
+            if self.crop_y2 + dy > max_y:
                 dy = max_y - self.crop_y2
-            
+
             self.crop_x1 += dx; self.crop_x2 += dx
             self.crop_y1 += dy; self.crop_y2 += dy
         else:
@@ -955,14 +1256,14 @@ class UI:
                 self.crop_x1 = min(self.crop_x2 - min_w, max(self.img_x, self.crop_x1 + dx))
             if "e" in self.drag_mode:
                 self.crop_x2 = max(self.crop_x1 + min_w, min(max_x, self.crop_x2 + dx))
-            
+
         self.draw_crop_box()
 
     def on_mouse_hover(self, event):
-        if self.tabs.tab(self.tabs.select(), "text") != "Crop": 
+        if self.tabs.tab(self.tabs.select(), "text") != "Crop":
             self.canvas.config(cursor="")
             return
-            
+
         items = self.canvas.find_withtag("current")
         cursor = ""
         if items:
@@ -972,7 +1273,7 @@ class UI:
                     cursor = "crosshair"
                     break
             else:
-                if self.crop_x1 &lt; event.x &lt; self.crop_x2 and self.crop_y1 &lt; event.y &lt; self.crop_y2:
+                if self.crop_x1 < event.x < self.crop_x2 and self.crop_y1 < event.y < self.crop_y2:
                     cursor = "fleur"
         self.canvas.config(cursor=cursor)
 
@@ -984,6 +1285,18 @@ class UI:
         self.contrast_scale.set(1.0)
         self.alpha_scale.set(1.0)
         self.tolerance_scale.set(0)
+
+        self.watermark_text_var.set("")
+        self.wm_size_var.set("40")
+        self.wm_x_var.set("10")
+        self.wm_y_var.set("10")
+        self.watermark_alpha_scale.set(1.0)
+        self.watermark_color = (255, 255, 255)
+        self.swatch_watermark.configure(bg="#ffffff")
+
+        self.combine_image = None
+        self.lbl_combine_file.config(text="No image selected")
+        self.apply_edits()
 
         self.is_updating = True
         self.width.set(str(self.original.width))
@@ -1006,7 +1319,7 @@ class UI:
 
     def save_image(self):
         ImageIO.save_image(self.edited, parent = self.root)
-</code></pre>
+                    </code></pre>
 				</div>
 			</div>
 			<div class="code-block">
@@ -1014,21 +1327,18 @@ class UI:
                 main.py
 				</div>
 				<div class="code-collapse">
-					<pre><code>
-import tkinter as tk
+                    <pre><code>
+                        import tkinter as tk
 from ui import UI
 
 if __name__ == "__main__":
     root = tk.Tk()
     app = UI(root)
     root.mainloop()
-</code></pre>
+                    </code></pre>
 				</div>
 			</div>
         </article>
-
-        <!-- Якщо файлів коду кілька — скопіюй весь article.code-block вище
-             ще раз і зміни id (напр. code-2) та назву у code-header -->
 
         <article id="examples" class="code-block">
             <h3>Приклади</h3>
@@ -1037,43 +1347,37 @@ if __name__ == "__main__":
             </div>
             <div class="code-collapse">
                 <pre>
-<p>Початкове зображення</p>
-<p><img src="/reports/photos/lab02/1.png" class="photo" alt="Приклад прозорості" /></p>
+                    <p>Початкові зображення</p>
+                    <div style="display: flex; justify-content: center; align-items: center; gap: 15px; white-space: normal; margin-top: 15px;">
+                        <img src="reports/photos/lab03/1.png" class="photo" style="max-width: 50%;" />
+                        <img src="reports/photos/lab03/2.png" class="photo" style="max-width: 50%;" />
+                    </div>
 
-<p>Зміна прозорості</p>
-<p><img src="/reports/photos/lab02/4.png" class="photo" alt="Приклад прозорості" /></p>
+                    <p>Об'єднання зображень</p>
+                    <div style="display: flex; justify-content: center; align-items: center; gap: 15px; white-space: normal; margin-top: 15px;">
+                        <img src="reports/photos/lab03/3.png" class="photo" style="max-width: 50%;" />
+                        <img src="reports/photos/lab03/4.png" class="photo" style="max-width: 50%;" />
+                    </div>
 
-<p>Збільшення контрастності</p>
-<div style="display: flex; justify-content: center; align-items: center; gap: 15px; white-space: normal; margin-top: 15px;">
-    <img src="reports/photos/lab02/2.png" class="photo" style="max-width: 50%;" />
-    <img src="reports/photos/lab02/3.png" class="photo" style="max-width: 50%;" />
-</div>
+                    <p>Створення водяного знаку на зображенні</p>
+                    <p><img src="/reports/photos/lab03/5.png" class="photo"/></p>
 
-<p>Кадрування та вирізання області</p>
-<div style="display: flex; justify-content: center; align-items: center; gap: 15px; white-space: normal; margin-top: 15px;">
-    <img src="reports/photos/lab02/6.png" class="photo" style="max-width: 30%;" />
-    <img src="reports/photos/lab02/7.png" class="photo" style="max-width: 30%;" />
-	<img src="reports/photos/lab02/8.png" class="photo" style="max-width: 30%;" />
-</div>
-
-<p>Розбиття фото на рівну сітку</p>
-<div style="display: flex; justify-content: center; align-items: center; gap: 15px; white-space: normal; margin-top: 15px;">
-    <img src="reports/photos/lab02/5.png" class="photo" style="max-width: 50%;" />
-    <img src="reports/photos/lab02/9.png" class="photo" style="max-width: 50%;" />
-</div>
-</pre>
+                    <p>Створення слайд-шоу</p>
+                    <div style="display: flex; justify-content: center; align-items: center; gap: 15px; white-space: normal; margin-top: 15px;">
+                        <img src="reports/photos/lab03/6.png" class="photo" style="max-width: 30%;" />
+                        <img src="reports/photos/lab03/7.webp" class="photo" style="max-width: 30%;" />
+                    </div>
+                </pre>
             </div>
         </article>
 
         <article id="conclusion">
             <h3>Висновки</h3>
-            <!-- ЗАПОВНІТЬ: висновки по роботі -->
             <p>
-                Під час виконання лабораторної роботи було продовжено дослідження методів обробки цифрових зображень мовою Python з використанням бібліотек Pillow та NumPy, а також розширено можливості графічного інтерфейсу на базі Tkinter. Було поглиблено знання про колірні моделі растрової графіки, вивчивши принципи роботи з альфа-каналом, що дозволило програмно керувати рівнем прозорості пікселів. Також отримано навички маніпулювання просторовими характеристиками кадру: реалізувано кадрування, функцію вирізання областей шляхом обнулення матриці пікселів та алгоритм розбиття зображення на фрагменти.
-У ході тестування програми ми дізналися, що для коректної роботи інструментів виділення через графічний інтерфейс необхідно виконувати точний математичний перерахунок екранних координат у реальні розміри оригінального файлу з урахуванням поточного масштабу. Практична перевірка інструменту контрастності довела перевагу двопрохідного алгоритму: розрахунок динамічного середнього значення яскравості за допомогою функції np.mean дозволяє коректно обробляти як дуже світлі, так і надто темні фотографії, оскільки динамічний діапазон розширюється відносно фактичної тональності кадру. Також ми на практиці переконалися, що після математичних трансформацій матриці кольорів обов'язково слід застосовувати функцію np.clip, бо без жорсткого обмеження результатів діапазоном від 0 до 255 виникає байтове переповнення, через що найсвітліші ділянки фотографії спотворюються та перетворюються на чорні артефакти. Отримані практичні навички роботи з просторовим кадруванням, прозорістю, адаптивними алгоритмами корекції та подіями миші на полотні є важливим кроком у розумінні комп'ютерної графіки і стануть міцним підґрунтям для розробки складніших мультимедійних програмних проєктів.            </p>
+                Під час виконання лабораторної роботи було продовжено дослідження методів обробки цифрових зображень мовою Python з використанням бібліотек Pillow та NumPy, а також розширено можливості графічного інтерфейсу на базі Tkinter, реалізовано алгоритми об'єднання зображень з автоматичним пропорційним масштабуванням та механізм накладання текстових водяних знаків, а також показ слайд-шоу з обраних зображень.
+                У ході тестування програми ми дізналися, що для коректного застосування прозорості до тексту його не можна малювати безпосередньо на оригіналі, натомість необхідно генерувати окремий повністю прозорий шар, на якому рендериться текст із розрахованим альфа-каналом, з подальшим злиттям матриць через алгоритм Image.alpha_composite. Практична перевірка інструменту комбінування довела, що метод paste не розширює фізичні межі базового полотна автоматично, тому алгоритм вимагає обов'язкового попереднього розрахунку габаритів фінального кадру та точного позиціювання фрагментів виключно за додатними координатами для запобігання відсіканню пікселів. Також ми на практиці переконалися, що використання стандартних функцій затримки на кшталт time.sleep() призводить до повного блокування головного потоку графічного інтерфейсу, тому для плавного циклічного перемикання кадрів та збереження працездатності програми необхідно застосовувати неблокуючий таймер delay на базі методу after() бібліотеки Tkinter. Отримані практичні навички роботи з просторовим компонуванням, програмним рендерингом тексту, архітектурною модульністю та механізмами асинхронного відтворення медіаданих є важливим кроком у розумінні комп'ютерної графіки і стануть міцним підґрунтям для розробки професійних застосунків.
+            </p>
         </article>
-
     </div>
-
 </body>
 </html>
