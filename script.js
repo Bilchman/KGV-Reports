@@ -7,6 +7,7 @@ const REPORTS = [
     { id: "02lab", title: "Лабораторна робота №2", file: "reports/02lab.html" },
     { id: "03lab", title: "Лабораторна робота №3", file: "reports/03lab.html" },
     { id: "04lab", title: "Лабораторна робота №4", file: "reports/04lab.html" },
+    { id: "05lab", title: "Лабораторна робота №5", file: "reports/05lab.html" },
 ];
 
 const SECTIONS = [
